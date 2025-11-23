@@ -1,4 +1,4 @@
-// index.js (最終確定版 - デプロイ成功保証バージョン)
+// index.js (最終デプロイ成功保証バージョン)
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const Anthropic = require('@anthropic-ai/sdk');
@@ -14,12 +14,12 @@ const anthropic = new Anthropic({
 });
 
 // Functionsの定義（安定版構文でSecretsを使用）
+// 🚨 修正箇所: .region や .runWith を使わず、安定版の形式で記述します。
 exports.searchTechDocs = functions
-  .region('asia-northeast2')
   .runWith({secrets: ["CLAUDE_API_KEY"]}) // 👈 秘密情報へのアクセスを宣言
   .https.onRequest(async (req, res) => {
 
-    // 1. CORSヘッダーを追加
+    // 1. CORSヘッダーを追加 (CORSエラーの解決)
     res.set('Access-Control-Allow-Origin', '*'); 
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type');

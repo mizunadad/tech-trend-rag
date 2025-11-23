@@ -18,7 +18,8 @@
         "firebase-debug.log",
         "firebase-debug.*.log",
         "*.local"
-      ]
+      ],
+      "secrets": ["CLAUDE_API_KEY"]
     }
   ],
   "hosting": {
