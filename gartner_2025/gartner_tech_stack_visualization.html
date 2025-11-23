@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gartner 2025 技術スタック構造図</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 80px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        /* Legend Styles */
+        .legend-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .legend-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .legend-color {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .legend-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        /* Stack Diagram */
+        .stack-diagram {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 25px;
+            margin: 30px 0;
+            position: relative;
+        }
+        .layer {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+        .layer:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        .layer-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid;
+        }
+        .layer-icon {
+            font-size: 36px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+        .layer-info {
+            flex: 1;
+        }
+        .layer-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .layer-description {
+            font-size: 13px;
+            color: #7f8c8d;
+            line-height: 1.5;
+        }
+        
+        /* Technologies Grid */
+        .technologies {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .tech-card {
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .tech-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .tech-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .tech-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .badge-hype {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .badge-timeline {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .badge-peak {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .badge-trough {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-slope {
+            background: #cce5ff;
+            color: #004085;
+        }
+        .badge-trigger {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        /* Japan Status Indicators */
+        .japan-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .japan-strong {
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+        .japan-weak {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+        .japan-neutral {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+        }
+        
+        /* Modal for details */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 28px;
+            cursor: pointer;
+            color: #7f8c8d;
+            background: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .modal-close:hover {
+            background: #f0f0f0;
+        }
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .modal-section {
+            margin-bottom: 20px;
+        }
+        .modal-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        .modal-section p, .modal-section ul {
+            font-size: 14px;
+            color: #6c757d;
+            line-height: 1.6;
+        }
+        .modal-section ul {
+            padding-left: 20px;
+        }
+        .modal-section li {
+            margin-bottom: 8px;
+        }
+        
+        /* Relationship Diagram */
+        .relationship-diagram {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        .relationship-diagram .mermaid {
+            display: flex;
+            justify-content: center;
+            min-height: 600px;
+        }
+        
+        /* Info Panel */
+        .info-panel {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 5px solid #2196f3;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        .info-panel h3 {
+            color: #1565c0;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .info-panel ul {
+            list-style: none;
+            padding: 0;
+        }
+        .info-panel li {
+            padding: 8px 0;
+            color: #1976d2;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .info-panel li:before {
+            content: "▸ ";
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        /* Color definitions */
+        .layer1 { border-left: 8px solid #95a5a6; }
+        .layer1 .layer-header { border-color: #95a5a6; }
+        .layer1 .layer-icon { background: #ecf0f1; }
+        
+        .layer2 { border-left: 8px solid #f39c12; }
+        .layer2 .layer-header { border-color: #f39c12; }
+        .layer2 .layer-icon { background: #fef5e7; }
+        
+        .layer3 { border-left: 8px solid #27ae60; }
+        .layer3 .layer-header { border-color: #27ae60; }
+        .layer3 .layer-icon { background: #eafaf1; }
+        
+        .layer4 { border-left: 8px solid #3498db; }
+        .layer4 .layer-header { border-color: #3498db; }
+        .layer4 .layer-icon { background: #ebf5fb; }
+        
+        .layer5 { border-left: 8px solid #1abc9c; }
+        .layer5 .layer-header { border-color: #1abc9c; }
+        .layer5 .layer-icon { background: #e8f8f5; }
+        
+        .layer6 { border-left: 8px solid #e74c3c; }
+        .layer6 .layer-header { border-color: #e74c3c; }
+        .layer6 .layer-icon { background: #fadbd8; }
+
+        @media (max-width: 768px) {
+            .technologies {
+                grid-template-columns: 1fr;
+            }
+            .legend-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏗️ Gartner 2025年度ハイプ・サイクル技術スタック構造図</h1>
+        <p class="subtitle">製造業DX技術の6層アーキテクチャ - 27技術の位置関係と日本の立ち位置分析</p>
+        
+        <!-- Legend -->
+        <div class="legend-container">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e74c3c;">🛡️</div>
+                <span class="legend-text">レイヤー6: ガバナンス・セキュリティ層（横断的保護）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #1abc9c;">💼</div>
+                <span class="legend-text">レイヤー5: ビジネス・製造応用層（価値創出）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #3498db;">🤖</div>
+                <span class="legend-text">レイヤー4: 物理世界統合層（日本の強み）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #27ae60;">⚡</div>
+                <span class="legend-text">レイヤー3: 自律・実行層（判断・行動）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f39c12;">🧠</div>
+                <span class="legend-text">レイヤー2: AI技術・知能層（アルゴリズム）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #95a5a6;">🏗️</div>
+                <span class="legend-text">レイヤー1: データ・基盤層（すべての土台）</span>
+            </div>
+        </div>
+
+        <!-- Stack Diagram -->
+        <div class="stack-diagram" id="stackDiagram"></div>
+
+        <!-- Info Panel -->
+        <div class="info-panel">
+            <h3>📊 日本の立ち位置サマリー</h3>
+            <ul>
+                <li><strong>🟢 圧倒的強み:</strong> レイヤー4（Physical AI、Humanoid Robots）、Energy-efficient Computing、Digital Immune Systems</li>
+                <li><strong>🔴 戦略的弱み:</strong> レイヤー3（AI Agents、Agentic AI）、AI-Ready Data、Machine Customers</li>
+                <li><strong>🟡 改善必要:</strong> Knowledge Graphs、Composite AI、Autonomous Sourcing</li>
+                <li><strong>🚨 最優先対応:</strong> AI TRiSM（ガバナンス構築）、AI-Ready Data（データ基盤整備）</li>
+            </ul>
+        </div>
+
+        <!-- Relationship Diagram Section -->
+        <div style="margin-top: 50px;">
+            <h2 style="text-align: center; color: #2c3e50; font-size: 28px; margin-bottom: 15px;">🔗 技術間依存関係マップ</h2>
+            <p style="text-align: center; color: #7f8c8d; margin-bottom: 30px; font-size: 15px;">主要技術の連携関係と実装優先順位を可視化</p>
+            
+            <!-- Layer Flow Explanation -->
+            <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 25px; border-radius: 15px; margin-bottom: 30px;">
+                <h3 style="color: #2c3e50; font-size: 20px; margin-bottom: 20px; text-align: center;">📊 6層アーキテクチャの依存関係</h3>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+                    <div style="background: white; padding: 15px 25px; border-radius: 10px; border: 3px solid #95a5a6; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="font-weight: 700; color: #95a5a6; font-size: 14px;">🏗️ レイヤー1</div>
+                        <div style="font-size: 12px; color: #6c757d;">データ・基盤層</div>
+                    </div>
+                    <div style="font-size: 24px; color: #95a5a6;">→</div>
+                    <div style="background: white; padding: 15px 25px; border-radius: 10px; border: 3px solid #f39c12; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="font-weight: 700; color: #f39c12; font-size: 14px;">🧠 レイヤー2</div>
+                        <div style="font-size: 12px; color: #6c757d;">AI技術・知能層</div>
+                    </div>
+                    <div style="font-size: 24px; color: #95a5a6;">→</div>
+                    <div style="background: white; padding: 15px 25px; border-radius: 10px; border: 3px solid #27ae60; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="font-weight: 700; color: #27ae60; font-size: 14px;">⚡ レイヤー3</div>
+                        <div style="font-size: 12px; color: #6c757d;">自律・実行層</div>
+                    </div>
+                    <div style="font-size: 24px; color: #95a5a6;">→</div>
+                    <div style="background: white; padding: 15px 25px; border-radius: 10px; border: 3px solid #3498db; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                        <div style="font-weight: 700; color: #3498db; font-size: 14px;">🤖 レイヤー4</div>
+                        <div style="font-size: 12px; color: #6c757d;">物理世界統合層</div>
+                        <div style="font-size: 11px; color: #4caf50; font-weight: 600; margin-top: 5px;">🟢 日本の強み</div>
+                    </div>
+                    <div style="font-size: 24px; color: #95a5a6;">→</div>
+                    <div style="background: white; padding: 15px 25px; border-radius: 10px; border: 3px solid #1abc9c; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="font-weight: 700; color: #1abc9c; font-size: 14px;">💼 レイヤー5</div>
+                        <div style="font-size: 12px; color: #6c757d;">ビジネス応用層</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <div style="display: inline-block; background: white; padding: 15px 30px; border-radius: 10px; border: 3px solid #e74c3c; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                        <div style="font-weight: 700; color: #e74c3c; font-size: 16px;">🛡️ レイヤー6: ガバナンス・セキュリティ層</div>
+                        <div style="font-size: 13px; color: #6c757d; margin-top: 5px;">↑ 全レイヤーを横断的に保護・管理 ↑</div>
+                        <div style="font-size: 12px; color: #e74c3c; font-weight: 600; margin-top: 8px;">🚨 最優先対応: AI TRiSM</div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px;">
+                    <strong style="color: #856404;">💡 重要:</strong>
+                    <span style="color: #856404; font-size: 14px;"> 下層の技術が上層の技術を支えます。レイヤー1（データ・基盤）が全ての前提となり、レイヤー6（ガバナンス）が全体を守ります。</span>
+                </div>
+            </div>
+            
+            <div class="relationship-diagram" id="relationshipDiagram">
+                <div class="mermaid">
+graph TB
+    subgraph Critical["🚨 最優先実装領域（全レイヤーの前提）"]
+        AI_Data["AI-Ready Data<br/>【レイヤー1】<br/>📈過度な期待<br/>🔴日本の弱み"]
+        AI_TRiSM["AI TRiSM<br/>【レイヤー6】<br/>🔧技術革新期<br/>🟡改善必要"]
+    end
+
+    subgraph Layer1["🏗️ レイヤー1: データ・コンピューティング基盤層"]
+        Cloud_AI["Cloud AI Services<br/>📊啓発の坂<br/>🟡"]
+        KG["Knowledge Graphs<br/>📊啓発の坂<br/>🔴弱み"]
+        Energy["Energy-efficient<br/>Computing<br/>📊啓発の坂<br/>🟢強み"]
+        Confidential["Confidential<br/>Computing<br/>📊啓発の坂<br/>🟡"]
+    end
+
+    subgraph Layer2["🧠 レイヤー2: AI技術・知能層"]
+        GenAI["Generative AI<br/>📉幻滅の谷<br/>🔴弱み"]
+        Composite["Composite AI<br/>🔧技術革新期<br/>🟡改善必要"]
+        Domain_GenAI["Domain-specific<br/>GenAI<br/>🔧技術革新期<br/>🔴弱み"]
+    end
+
+    subgraph Layer3["⚡ レイヤー3: 自律・実行層"]
+        AI_Agents["AI Agents<br/>📈過度な期待<br/>🔴弱み"]
+        Agentic["Agentic AI<br/>📈過度な期待<br/>🔴弱み"]
+        Decision["Decision<br/>Intelligence<br/>🔧技術革新期<br/>🟡"]
+        Intel_Sim["Intelligent<br/>Simulation<br/>🔧技術革新期<br/>🟡"]
+    end
+
+    subgraph Layer4["🤖 レイヤー4: 物理世界統合層（日本の強み🟢）"]
+        Humanoid["Humanoid<br/>Robots<br/>🔧技術革新期<br/>🟢強み"]
+        Physical_AI["Physical AI<br/>🔧技術革新期<br/>🟢強み"]
+        Embodied["Embodied AI<br/>🔧技術革新期<br/>🟢強み"]
+    end
+
+    subgraph Layer5["💼 レイヤー5: ビジネス・製造応用層"]
+        Machine_Cust["Machine<br/>Customers<br/>📈過度な期待<br/>🔴弱み"]
+        Auto_Source["Autonomous<br/>Sourcing<br/>🔧技術革新期<br/>🔴弱み"]
+    end
+
+    subgraph Layer6["🛡️ レイヤー6: ガバナンス・セキュリティ層（横断的）"]
+        AI_Gov["AI Governance<br/>Platforms<br/>🔧技術革新期<br/>🟡"]
+        DIS["Digital Immune<br/>Systems<br/>📊啓発の坂<br/>🟢強み"]
+    end
+
+    %% Layer-to-Layer Dependencies (Main Flow)
+    Layer1 -.->|"基盤提供"| Layer2
+    Layer2 -.->|"知能提供"| Layer3
+    Layer3 -.->|"自律行動"| Layer4
+    Layer4 -.->|"物理実装"| Layer5
+    Layer3 -.->|"直接応用"| Layer5
+
+    %% Critical Dependencies
+    AI_Data ==>|"データ品質<br/>が前提"| GenAI
+    AI_Data ==>|"学習データ<br/>提供"| Domain_GenAI
+    AI_Data -->|"構造化"| KG
+    
+    %% Layer1 to Layer2
+    Cloud_AI -->|"インフラ<br/>提供"| GenAI
+    KG -->|"知識統合"| Composite
+    Confidential -->|"セキュア<br/>実行環境"| Cloud_AI
+    
+    %% Layer2 to Layer3
+    GenAI ==>|"基盤技術"| AI_Agents
+    GenAI ==>|"推論能力"| Agentic
+    Composite -->|"複合判断"| Decision
+    Domain_GenAI -->|"専門知識"| AI_Agents
+    
+    %% Layer3 to Layer4
+    AI_Agents -->|"制御指令"| Physical_AI
+    Agentic -->|"自律行動"| Humanoid
+    Decision -->|"意思決定"| Physical_AI
+    Intel_Sim -->|"シミュレート"| Embodied
+    
+    %% Layer4 to Layer5
+    Physical_AI -->|"自動実行"| Auto_Source
+    Humanoid -->|"物理作業"| Auto_Source
+    
+    %% Layer3 to Layer5 (Direct)
+    AI_Agents -->|"自律取引"| Machine_Cust
+    Agentic -->|"交渉・契約"| Machine_Cust
+    Decision -->|"調達判断"| Auto_Source
+    
+    %% Layer6 Governance (Cross-cutting)
+    AI_TRiSM -.->|"監査・管理"| GenAI
+    AI_TRiSM -.->|"リスク評価"| AI_Agents
+    AI_TRiSM -.->|"信頼性確保"| Agentic
+    AI_Gov -.->|"ライフサイクル<br/>管理"| AI_Agents
+    AI_Gov -.->|"ポリシー適用"| GenAI
+    DIS -.->|"自己防御"| Cloud_AI
+    DIS -.->|"異常検知"| Physical_AI
+
+    %% Japanese Strengths Path
+    Energy -->|"省エネ設計"| Physical_AI
+    Energy -->|"効率最適化"| Embodied
+    
+    %% Styling
+    style Critical fill:#fff3cd,stroke:#ffc107,stroke-width:4px
+    style Layer1 fill:#ecf0f1,stroke:#95a5a6,stroke-width:2px
+    style Layer2 fill:#fef5e7,stroke:#f39c12,stroke-width:2px
+    style Layer3 fill:#eafaf1,stroke:#27ae60,stroke-width:2px
+    style Layer4 fill:#ebf5fb,stroke:#3498db,stroke-width:4px
+    style Layer5 fill:#e8f8f5,stroke:#1abc9c,stroke-width:2px
+    style Layer6 fill:#fadbd8,stroke:#e74c3c,stroke-width:4px
+    
+    style AI_Data fill:#ffebee,stroke:#c62828,stroke-width:4px
+    style AI_TRiSM fill:#fff9c4,stroke:#f57f17,stroke-width:4px
+    style Physical_AI fill:#e3f2fd,stroke:#1565c0,stroke-width:3px
+    style Humanoid fill:#e3f2fd,stroke:#1565c0,stroke-width:3px
+    style Embodied fill:#e3f2fd,stroke:#1565c0,stroke-width:3px
+    style Energy fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
+    style DIS fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
+                </div>
+            </div>
+
+            <!-- Relationship Legend -->
+            <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3 style="color: #2c3e50; font-size: 18px; margin-bottom: 15px;">📖 関係図の読み方</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                    <div>
+                        <strong style="color: #495057;">太い実線矢印 (⇒):</strong>
+                        <p style="color: #6c757d; font-size: 14px; margin: 5px 0;">非常に強い依存関係。必須の前提条件となる技術連携。</p>
+                    </div>
+                    <div>
+                        <strong style="color: #495057;">実線の矢印 (→):</strong>
+                        <p style="color: #6c757d; font-size: 14px; margin: 5px 0;">技術的な依存関係。矢印元の技術が矢印先の技術を支える。</p>
+                    </div>
+                    <div>
+                        <strong style="color: #495057;">点線の矢印 (-.->):</strong>
+                        <p style="color: #6c757d; font-size: 14px; margin: 5px 0;">レイヤー間の流れ、またはガバナンス・管理の関係。</p>
+                    </div>
+                    <div>
+                        <strong style="color: #495057;">🚨 黄色エリア（太枠）:</strong>
+                        <p style="color: #6c757d; font-size: 14px; margin: 5px 0;">最優先で実装すべき技術。すべての上位層の前提となる。</p>
+                    </div>
+                    <div>
+                        <strong style="color: #495057;">🤖 青色エリア（太枠）:</strong>
+                        <p style="color: #6c757d; font-size: 14px; margin: 5px 0;">レイヤー4（物理世界統合層）。日本の強み領域。</p>
+                    </div>
+                    <div>
+                        <strong style="color: #495057;">🛡️ 赤色エリア（太枠）:</strong>
+                        <p style="color: #6c757d; font-size: 14px; margin: 5px 0;">レイヤー6（ガバナンス層）。すべての技術を横断的に管理。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Implementation Path -->
+            <div style="margin-top: 30px; padding: 25px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 10px; border-left: 5px solid #4caf50;">
+                <h3 style="color: #2e7d32; font-size: 20px; margin-bottom: 20px;">🎯 推奨実装パス（半導体・品質保証分野向け）</h3>
+                
+                <div style="display: grid; gap: 15px;">
+                    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <div style="font-weight: 700; color: #c62828; margin-bottom: 8px;">⚡ フェーズ1（0-6ヶ月）: 基盤固め</div>
+                        <ol style="margin-left: 20px; color: #555; font-size: 14px; line-height: 1.8;">
+                            <li><strong>AI-Ready Data:</strong> テストデータの品質監査、Pythonパイプライン構築</li>
+                            <li><strong>AI TRiSM:</strong> AI利用ポリシー策定、リスク評価プロセス確立</li>
+                            <li><strong>Digital Immune Systems:</strong> 既存の予防保全システム高度化</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <div style="font-weight: 700; color: #f57f17; margin-bottom: 8px;">🔥 フェーズ2（6-18ヶ月）: AI技術統合</div>
+                        <ol style="margin-left: 20px; color: #555; font-size: 14px; line-height: 1.8;">
+                            <li><strong>Domain-specific GenAI:</strong> 半導体テスト特化型LLMのファインチューニング</li>
+                            <li><strong>Knowledge Graphs:</strong> 不良要因の知識グラフ化、因果関係可視化</li>
+                            <li><strong>Composite AI:</strong> 物理モデル + 機械学習の統合テストシステム</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <div style="font-weight: 700; color: #1976d2; margin-bottom: 8px;">🤖 フェーズ3（1.5-3年）: 自律化推進</div>
+                        <ol style="margin-left: 20px; color: #555; font-size: 14px; line-height: 1.8;">
+                            <li><strong>AI Agents:</strong> LangChainベースのテスト自動化エージェント開発</li>
+                            <li><strong>Decision Intelligence:</strong> 品質判定の意思決定支援システム</li>
+                            <li><strong>Intelligent Simulation:</strong> AI統合シミュレーションによるテスト最適化</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <div style="font-weight: 700; color: #6a1b9a; margin-bottom: 8px;">🚀 フェーズ4（3-5年）: 物理世界統合</div>
+                        <ol style="margin-left: 20px; color: #555; font-size: 14px; line-height: 1.8;">
+                            <li><strong>Physical AI:</strong> メカトロニクス製品へのAI統合（日本の強み活用）</li>
+                            <li><strong>Agentic AI:</strong> 複数エージェント協調による製造最適化</li>
+                            <li><strong>Autonomous Sourcing:</strong> 部材調達の完全自動化</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const techData = {
+            layer6: {
+                title: "レイヤー6: ガバナンス・セキュリティ層",
+                icon: "🛡️",
+                description: "全技術層を横断的に保護・管理する最重要層。品質保証・コンプライアンスの要。",
+                techs: [
+                    {name: "AI TRiSM", hype: "trigger", timeline: "2-5年", japan: "neutral", detail: "AI信頼性・リスク・セキュリティ管理。AIテストツールの監査、バイアス検出が重要。日本は制度整備中だが実装は初期段階。"},
+                    {name: "AI Governance Platforms", hype: "trigger", timeline: "2-5年", japan: "neutral", detail: "AIモデルのライフサイクル管理プラットフォーム。MLOps基盤との統合が課題。"},
+                    {name: "Disinformation Security", hype: "trigger", timeline: "2-5年", japan: "weak", detail: "偽情報・ディープフェイク対策。テストデータの真正性確認に重要。日本の認識は低い。"},
+                    {name: "Digital Immune Systems", hype: "slope", timeline: "2-5年", japan: "strong", detail: "システムの自己修復・防御能力。日本の予防保全ノウハウが活きる分野。"},
+                    {name: "Crypto-agility", hype: "trigger", timeline: "2-5年", japan: "neutral", detail: "暗号アルゴリズムの柔軟な切り替え。量子コンピュータ耐性対策として重要。"},
+                    {name: "Technological Sovereignty", hype: "trigger", timeline: "5-10年", japan: "neutral", detail: "技術主権。海外製EDAツール依存リスクの認識が高まっている。"}
+                ]
+            },
+            layer5: {
+                title: "レイヤー5: ビジネス・製造応用層",
+                icon: "💼",
+                description: "実際のビジネス価値を生み出す層。調達・製造・販売の自動化を実現。",
+                techs: [
+                    {name: "Machine Customers", hype: "peak", timeline: "5-10年", japan: "weak", detail: "AIエージェントが自律的に購買・契約。日本は人間中心の商習慣に固執し遅れ。"},
+                    {name: "Autonomous Sourcing", hype: "trigger", timeline: "2-5年", japan: "weak", detail: "調達の完全自動化。大手製造業が実証実験開始も中小企業への普及はこれから。"},
+                    {name: "Programmable Money", hype: "trigger", timeline: "5-10年", japan: "weak", detail: "プログラマブル通貨・スマートコントラクト。CBDC実証段階で実用化は先。"},
+                    {name: "Future of Work Technologies", hype: "mixed", timeline: "2-5年", japan: "neutral", detail: "リモートワーク・AIアシスタント等。製造現場のDX化は道半ば。"},
+                    {name: "CSP Technologies", hype: "mixed", timeline: "2-5年", japan: "strong", detail: "5G/6G通信基盤。日本の通信インフラは世界トップレベル。"}
+                ]
+            },
+            layer4: {
+                title: "レイヤー4: 物理世界統合層",
+                icon: "🤖",
+                description: "AIと物理世界をつなぐ層。メカトロニクス製品の知能化。日本の伝統的強み。",
+                techs: [
+                    {name: "Humanoid Robots", hype: "trigger", timeline: "5-10年", japan: "strong", detail: "人間型ロボット。ホンダ、ソフトバンク等の技術蓄積あり。日本の強み分野。"},
+                    {name: "Physical AI", hype: "trigger", timeline: "5-10年", japan: "strong", detail: "物理世界を理解し相互作用するAI。産業用ロボット大国としての強みを活かせる。"},
+                    {name: "Embodied AI", hype: "trigger", timeline: "5-10年", japan: "strong", detail: "身体性を持つAI。物理環境での学習システム。基礎研究レベル。"},
+                    {name: "Ambient Invisible Intelligence", hype: "trigger", timeline: "5-10年", japan: "neutral", detail: "環境に溶け込む知能。スマートファクトリーの究極形。IoT基盤は強い。"},
+                    {name: "AGI", hype: "trigger", timeline: "10年以上", japan: "weak", detail: "汎用人工知能。OpenAI、DeepMind等の欧米企業がリード。"}
+                ]
+            },
+            layer3: {
+                title: "レイヤー3: 自律・実行層",
+                icon: "⚡",
+                description: "AIが判断し行動する層。テスト自動化・プロセス最適化の鍵。日本の弱み領域。",
+                techs: [
+                    {name: "AI Agents", hype: "peak", timeline: "2-5年", japan: "weak", detail: "自律的に計画・実行するAI。日本は概念実証段階で実運用例が少ない。"},
+                    {name: "Agentic AI", hype: "peak", timeline: "2-5年", japan: "weak", detail: "複数エージェントの協調システム。Gartner 2025年最重要技術。日本は研究段階。"},
+                    {name: "Decision Intelligence", hype: "trigger", timeline: "2-5年", japan: "neutral", detail: "データドリブン意思決定支援。コンサル主導で製造業実装は限定的。"},
+                    {name: "Intelligent Simulation", hype: "trigger", timeline: "2-5年", japan: "neutral", detail: "AI活用高速シミュレーション。日本はシミュレーション技術強いがAI融合は発展途上。"}
+                ]
+            },
+            layer2: {
+                title: "レイヤー2: AI技術・知能層",
+                icon: "🧠",
+                description: "データを知能に変換する技術群。品質予測・異常検知の中核。",
+                techs: [
+                    {name: "Generative AI", hype: "trough", timeline: "2-5年", japan: "weak", detail: "生成AI。幻滅の谷に到達し実用フェーズへ。日本は自社開発LLMが少なく米国依存。"},
+                    {name: "Composite AI", hype: "trigger", timeline: "2-5年", japan: "neutral", detail: "複数AI技術の統合。物理モデル+MLは日本の勝ち筋だが実装例少ない。"},
+                    {name: "Quantum AI", hype: "trigger", timeline: "5-10年", japan: "neutral", detail: "量子AI。理研・東大の研究は進むが産業応用は初期段階。"},
+                    {name: "Domain-specific GenAI", hype: "trigger", timeline: "2-5年", japan: "weak", detail: "ドメイン特化生成AI。製造業向けLLM開発は限定的。"},
+                    {name: "Model Context Protocols", hype: "trigger", timeline: "2-5年", japan: "weak", detail: "AIモデル間連携プロトコル。標準化議論への参画が弱い。"}
+                ]
+            },
+            layer1: {
+                title: "レイヤー1: データ・コンピューティング基盤層",
+                icon: "🏗️",
+                description: "すべてのAI技術を支える基盤。半導体・ICテスト分野で最重要。",
+                techs: [
+                    {name: "AI-Ready Data", hype: "peak", timeline: "2-5年", japan: "weak", detail: "AI学習用高品質データ。データ収集は得意だがクリーニング・ラベリング体制が脆弱。"},
+                    {name: "Cloud AI Services", hype: "slope", timeline: "2-5年", japan: "neutral", detail: "クラウドAIサービス。利用増加中だがデータ主権懸念から国内クラウド主流。"},
+                    {name: "Knowledge Graphs", hype: "slope", timeline: "2-5年", japan: "weak", detail: "知識グラフ。研究機関での利用は進むが製造現場実装は限定的。"},
+                    {name: "Energy-efficient Computing", hype: "slope", timeline: "2-5年", japan: "strong", detail: "省エネコンピューティング。日本の伝統的強み。Preferred Networks等が先行。"},
+                    {name: "Meta Computing", hype: "trigger", timeline: "5-10年", japan: "weak", detail: "メタコンピューティング。基礎研究レベルで産業応用は10年先。"},
+                    {name: "Confidential Computing", hype: "slope", timeline: "2-5年", japan: "neutral", detail: "機密コンピューティング。金融・医療先行で製造業採用はこれから。"},
+                    {name: "Spatial Computing", hype: "slope", timeline: "2-5年", japan: "strong", detail: "空間コンピューティング。ソニー、キヤノンがハードウェアで強み。"}
+                ]
+            }
+        };
+
+        function createTechCard(tech) {
+            const japanClass = tech.japan === 'strong' ? 'japan-strong' : 
+                              tech.japan === 'weak' ? 'japan-weak' : 'japan-neutral';
+            const japanIcon = tech.japan === 'strong' ? '🟢' : 
+                            tech.japan === 'weak' ? '🔴' : '🟡';
+            
+            const hypeClass = tech.hype === 'peak' ? 'badge-peak' : 
+                            tech.hype === 'trough' ? 'badge-trough' :
+                            tech.hype === 'slope' ? 'badge-slope' : 'badge-trigger';
+            const hypeText = tech.hype === 'peak' ? '過度な期待' : 
+                           tech.hype === 'trough' ? '幻滅の谷' :
+                           tech.hype === 'slope' ? '啓発の坂' : 
+                           tech.hype === 'mixed' ? '技術により異なる' : '技術革新期';
+            
+            return `
+                <div class="tech-card" onclick='showDetail(${JSON.stringify(tech)})'>
+                    <div class="japan-indicator ${japanClass}">${japanIcon}</div>
+                    <div class="tech-name">${tech.name}</div>
+                    <div>
+                        <span class="tech-badge ${hypeClass}">${hypeText}</span>
+                        <span class="tech-badge badge-timeline">${tech.timeline}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStack() {
+            const container = document.getElementById('stackDiagram');
+            let html = '';
+            
+            Object.keys(techData).reverse().forEach((layerKey, index) => {
+                const layer = techData[layerKey];
+                const layerNum = 6 - index;
+                html += `
+                    <div class="layer layer${layerNum}">
+                        <div class="layer-header">
+                            <div class="layer-icon">${layer.icon}</div>
+                            <div class="layer-info">
+                                <div class="layer-title">${layer.title}</div>
+                                <div class="layer-description">${layer.description}</div>
+                            </div>
+                        </div>
+                        <div class="technologies">
+                            ${layer.techs.map(tech => createTechCard(tech)).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function showDetail(tech) {
+            const modal = document.getElementById('modal');
+            const modalBody = document.getElementById('modalBody');
+            
+            const japanStatus = tech.japan === 'strong' ? '🟢 日本の強み分野' : 
+                              tech.japan === 'weak' ? '🔴 日本の弱み分野' : '🟡 改善必要分野';
+            
+            modalBody.innerHTML = `
+                <div class="modal-title">${tech.name}</div>
+                <div class="modal-section">
+                    <h3>📍 ハイプサイクル位置</h3>
+                    <p>${tech.hype === 'peak' ? '📈 Peak of Inflated Expectations（過度な期待のピーク）' : 
+                         tech.hype === 'trough' ? '📉 Trough of Disillusionment（幻滅の谷）' :
+                         tech.hype === 'slope' ? '📊 Slope of Enlightenment（啓発の坂道）' : 
+                         tech.hype === 'mixed' ? '🔧 複数段階（技術により異なる）' :
+                         '🔧 Innovation Trigger（技術革新の引き金）'}</p>
+                </div>
+                <div class="modal-section">
+                    <h3>⏰ 実用化時期</h3>
+                    <p>${tech.timeline}で実用化見込み</p>
+                </div>
+                <div class="modal-section">
+                    <h3>🇯🇵 日本の立ち位置</h3>
+                    <p>${japanStatus}</p>
+                </div>
+                <div class="modal-section">
+                    <h3>📝 詳細説明</h3>
+                    <p>${tech.detail}</p>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        // Close modal on outside click
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Initialize
+        renderStack();
+        
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                padding: 20
+            },
+            themeVariables: {
+                fontSize: '14px'
+            }
+        });
+    </script>
+</body>
+</html>

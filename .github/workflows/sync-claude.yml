@@ -1,0 +1,20 @@
+name: Sync to Claude Project
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gartner_2025/**'
+      - 'nikkei_bp_2025_2035/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Notify Update
+        run: |
+          echo "📝 MDファイルが更新されました"
+          echo "Claude Projectで手動アップロードしてください"
+          # 将来的にClaude API連携で自動化可能

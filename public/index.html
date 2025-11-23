@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技術トレンド相談 - Family Edition</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+        }
+        .search-box {
+            display: flex;
+            margin: 20px 0;
+        }
+        input {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px 0 0 10px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 0 10px 10px 0;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        #result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f5f7fa;
+            border-radius: 10px;
+            display: none;
+        }
+        .loading {
+            text-align: center;
+            color: #667eea;
+        }
+        .example {
+            background: #e8eaf6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 技術トレンド相談システム</h1>
+        <p style="text-align: center; color: #666;">
+            2025-2035年の技術トレンドをAIが分析してアドバイスします
+        </p>
+        
+        <div class="search-box">
+            <input id="queryInput" type="text" 
+                   placeholder="知りたい技術や相談内容を入力してください..."
+                   onkeypress="if(event.key==='Enter') search()">
+            <button onclick="search()">検索</button>
+        </div>
+        
+        <div class="example">
+            <strong>質問例:</strong>
+            <ul>
+                <li>化学工学とAIの融合で将来性のある分野は？</li>
+                <li>スポーツ×テクノロジーのキャリアパスは？</li>
+                <li>現在の[スキル]から2030年に向けて学ぶべきことは？</li>
+            </ul>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+    
+    <script type="module">
+    // Functions呼び出しに fetch API を使用するため、httpsCallableは不要になります。  
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+    // getFunctions, httpsCallable は不要
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+  	  apiKey: "AIzaSyBHLxaeBq5YIG7Ov77KBN9b3SYIguoToB4",
+  	  authDomain: "tech-trend-rag.firebaseapp.com",
+  	  projectId: "tech-trend-rag",
+  	  storageBucket: "tech-trend-rag.firebasestorage.app",
+  	  messagingSenderId: "83007234802",
+  	  appId: "1:83007234802:web:387840f216aac223ce266b"
+	};
+
+    // 1. アプリの初期化
+    const app = initializeApp(firebaseConfig);
+    // 2. Functionsの初期化は、ここでは Functionsサービス自体を直接参照しないため不要です。
+  
+    // 3. search() 関数定義 (グローバルスコープに公開) 
+    window.search = async function() {
+      const query = document.getElementById('queryInput').value;
+      const resultDiv = document.getElementById('result');
+
+      if (!query.trim()) {
+          alert('質問を入力してください');
+          return;
+      }
+      
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<div class="loading">🔍 検索中...';
+
+      try {
+          // 🚨 修正箇所: fetch API を使用し、firebase.jsonで定義したプロキシパスを呼び出す
+          const response = await fetch('/searchApi', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ query: query })
+          });
+          
+          if (!response.ok) {
+              throw new Error(`Server responded with status: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          // Functionsのレスポンス形式が { answer: "...", sources: [...] } であることを想定
+          resultDiv.innerHTML = `
+              <h3>💡 回答</h3>
+              <p>${data.answer.replace(/\n/g, '<br>')}</p>
+              <h4>📚 参考資料</h4>
+              <ul>
+                  ${data.sources.map(s => `<li>${s}</li>`).join('')}
+              </ul>
+          `;
+      } catch (error) {
+          resultDiv.innerHTML = `
+              <p style="color: red;">エラーが発生しました: ${error.message}</p>
+          `;
+      }
+  };
+</script>
+</body>
+</html>
+

@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テクノロジーロードマップ 2026-2035 - 抽象度マップ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Yu Gothic', 'Meiryo', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 2px solid #333;
+        }
+        
+        .timeline-2026-2028 { background: #48bb78; }
+        .timeline-2029-2031 { background: #4299e1; }
+        .timeline-2032-2035 { background: #ed8936; }
+        .timeline-beyond-2035 { background: #e53e3e; }
+        
+        .map-container {
+            position: relative;
+            margin-top: 40px;
+        }
+        
+        .abstraction-label {
+            position: absolute;
+            left: -120px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2d3748;
+            white-space: nowrap;
+        }
+        
+        .layer {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-left: 5px solid #cbd5e0;
+            position: relative;
+        }
+        
+        .layer-title {
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .abstraction-level {
+            background: #edf2f7;
+            padding: 3px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            color: #4a5568;
+        }
+        
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        
+        .tech-card {
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tech-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-color: #4299e1;
+        }
+        
+        .tech-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+        }
+        
+        .tech-card.t2026-2028::before { background: #48bb78; }
+        .tech-card.t2029-2031::before { background: #4299e1; }
+        .tech-card.t2032-2035::before { background: #ed8936; }
+        .tech-card.tbeyond-2035::before { background: #e53e3e; }
+        
+        .tech-id {
+            font-size: 0.75em;
+            color: #a0aec0;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .tech-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+        
+        .tech-timeline {
+            font-size: 0.7em;
+            color: #718096;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .timeline-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #718096;
+        }
+        
+        .close-modal:hover {
+            color: #2d3748;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .tech-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .part-divider {
+            margin: 40px 0;
+            padding: 20px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 テクノロジーロードマップ 2026-2035</h1>
+        <p class="subtitle">抽象度階層マップ - 社会への影響範囲 × 実現時期</p>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color timeline-2026-2028"></div>
+                <span>2026-2028年（短期）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color timeline-2029-2031"></div>
+                <span>2029-2031年（中期）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color timeline-2032-2035"></div>
+                <span>2032-2035年（長期）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color timeline-beyond-2035"></div>
+                <span>2035年以降（超長期）</span>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            
+            <!-- レイヤー1: 最高抽象度 - 社会システム全体 -->
+            <div class="layer">
+                <div class="layer-title">
+                    <span class="abstraction-level">レベル1: 社会システム全体</span>
+                    社会・経済の基盤を形成する技術群
+                </div>
+                <div class="tech-grid">
+                    <div class="tech-card t2029-2031" onclick="showDetail('T1-01', '安心・安全スーパーシティ', '統合的な都市管理システムによる安全で効率的な都市環境の実現', '2029-2031')">
+                        <div class="tech-id">T1-01</div>
+                        <div class="tech-name">安心・安全スーパーシティ</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T1-06', 'サイバーセキュリティー', '社会・経済インフラを守る包括的なセキュリティ体制', '2026-2028')">
+                        <div class="tech-id">T1-06</div>
+                        <div class="tech-name">サイバーセキュリティー</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2032-2035" onclick="showDetail('T1-07', '宇宙インフラストラクチャー', '衛星通信・測位・観測による全地球的インフラ', '2032-2035')">
+                        <div class="tech-id">T1-07</div>
+                        <div class="tech-name">宇宙インフラストラクチャー</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #ed8936;"></div>
+                            2032-2035年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T6-02', '自治体DX', '行政サービスのデジタル化による市民生活の利便性向上', '2029-2031')">
+                        <div class="tech-id">T6-02</div>
+                        <div class="tech-name">自治体DX</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T6-06', 'デジタルID', '社会基盤としての統一的な個人認証システム', '2026-2028')">
+                        <div class="tech-id">T6-06</div>
+                        <div class="tech-name">デジタルID</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card tbeyond-2035" onclick="showDetail('T3-02', '核融合エネルギー', '究極のクリーンエネルギー源による社会変革', '2035年以降')">
+                        <div class="tech-id">T3-02</div>
+                        <div class="tech-name">核融合エネルギー</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #e53e3e;"></div>
+                            2035年以降
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- レイヤー2: 高抽象度 - 産業・経済システム -->
+            <div class="layer">
+                <div class="layer-title">
+                    <span class="abstraction-level">レベル2: 産業・経済システム</span>
+                    複数産業に横断的に影響する技術群
+                </div>
+                <div class="tech-grid">
+                    <div class="tech-card t2026-2028" onclick="showDetail('T1-02', '防災DX・災害レジリエンス', '災害予測と迅速な対応による社会の強靱化', '2026-2028')">
+                        <div class="tech-id">T1-02</div>
+                        <div class="tech-name">防災DX・災害レジリエンス</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T1-09', 'サプライチェーン持続', 'グローバル供給網の可視化と最適化', '2026-2028')">
+                        <div class="tech-id">T1-09</div>
+                        <div class="tech-name">サプライチェーン持続</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T2-05', 'サーキュラーエコノミー', '資源循環型経済システムの構築', '2029-2031')">
+                        <div class="tech-id">T2-05</div>
+                        <div class="tech-name">サーキュラーエコノミー</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T6-01', 'デジタルツイン', '現実空間のデジタル化による産業最適化', '2026-2028')">
+                        <div class="tech-id">T6-01</div>
+                        <div class="tech-name">デジタルツイン</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2032-2035" onclick="showDetail('T14-01', '量子コンピューター', '複雑な最適化問題の解決による産業革新', '2032-2035')">
+                        <div class="tech-id">T14-01</div>
+                        <div class="tech-name">量子コンピューター</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #ed8936;"></div>
+                            2032-2035年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T16-02', 'ブロックチェーン', '分散型台帳による信頼性の高い取引基盤', '2029-2031')">
+                        <div class="tech-id">T16-02</div>
+                        <div class="tech-name">ブロックチェーン</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2032-2035" onclick="showDetail('T3-01', '人工光合成', 'CO2固定と燃料生成による産業構造転換', '2032-2035')">
+                        <div class="tech-id">T3-01</div>
+                        <div class="tech-name">人工光合成</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #ed8936;"></div>
+                            2032-2035年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T18-03', '電力産業', '分散型エネルギーシステムの構築', '2026-2028')">
+                        <div class="tech-id">T18-03</div>
+                        <div class="tech-name">電力産業</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="part-divider">
+                第1部 ソーシャル・イノベーション ▼
+            </div>
+
+            <!-- レイヤー3: 中抽象度 - 分野別社会課題解決 -->
+            <div class="layer">
+                <div class="layer-title">
+                    <span class="abstraction-level">レベル3: 分野別社会課題</span>
+                    特定分野の社会課題を解決する技術群
+                </div>
+                <div class="tech-grid">
+                    <div class="tech-card t2026-2028" onclick="showDetail('T1-03', '人流最適化', '都市内の人の移動を効率化するシステム', '2026-2028')">
+                        <div class="tech-id">T1-03</div>
+                        <div class="tech-name">人流最適化</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T1-08', 'トレーサビリティー', '製品・物資の追跡による安全性確保', '2026-2028')">
+                        <div class="tech-id">T1-08</div>
+                        <div class="tech-name">トレーサビリティー</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T2-01', 'インパクト情報管理', '企業の環境・社会影響の可視化', '2029-2031')">
+                        <div class="tech-id">T2-01</div>
+                        <div class="tech-name">インパクト情報管理</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T2-04', '環境保全型農業', '持続可能な農業生産システム', '2029-2031')">
+                        <div class="tech-id">T2-04</div>
+                        <div class="tech-name">環境保全型農業</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T4-01', 'データドリブン人事', '科学的根拠に基づく人材マネジメント', '2029-2031')">
+                        <div class="tech-id">T4-01</div>
+                        <div class="tech-name">データドリブン人事</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T4-02', 'AIとヒトの協働', '人間とAIの最適な役割分担', '2026-2028')">
+                        <div class="tech-id">T4-02</div>
+                        <div class="tech-name">AIとヒトの協働</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T4-05', 'ウェルビーイング経営・健康経営', '従業員の幸福と健康を重視する経営', '2029-2031')">
+                        <div class="tech-id">T4-05</div>
+                        <div class="tech-name">ウェルビーイング経営・健康経営</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T6-07', '教育とICT（EdTech）', '個別最適化された学習環境の実現', '2026-2028')">
+                        <div class="tech-id">T6-07</div>
+                        <div class="tech-name">教育とICT（EdTech）</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T8-01', 'VR/メタバースの世界', '仮想空間での新しい社会経済活動', '2029-2031')">
+                        <div class="tech-id">T8-01</div>
+                        <div class="tech-name">VR/メタバースの世界</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="part-divider">
+                第2部 インダストリー・イノベーション ▼
+            </div>
+
+            <!-- レイヤー4: 産業別基盤技術 -->
+            <div class="layer">
+                <div class="layer-title">
+                    <span class="abstraction-level">レベル4: 産業別基盤</span>
+                    特定産業の基盤となる技術群
+                </div>
+                <div class="tech-grid">
+                    <div class="tech-card t2029-2031" onclick="showDetail('T9-01', 'eモビリティー時代の新基幹技術', 'EV/自動運転の基盤技術', '2029-2031')">
+                        <div class="tech-id">T9-01</div>
+                        <div class="tech-name">eモビリティー時代の新基幹技術</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T10-01', 'AIと医療', '診断・治療の精度向上と最適化', '2026-2028')">
+                        <div class="tech-id">T10-01</div>
+                        <div class="tech-name">AIと医療</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T12-01', 'ロボットフレンドリーシティ', 'ロボット共生都市インフラ', '2029-2031')">
+                        <div class="tech-id">T12-01</div>
+                        <div class="tech-name">ロボットフレンドリーシティ</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T13-01', 'パワー半導体', '高効率電力変換による省エネ実現', '2026-2028')">
+                        <div class="tech-id">T13-01</div>
+                        <div class="tech-name">パワー半導体</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T15-01', 'マテリアルズインフォマティクス', 'AI活用による材料開発の加速', '2026-2028')">
+                        <div class="tech-id">T15-01</div>
+                        <div class="tech-name">マテリアルズインフォマティクス</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T16-01', 'フィンテック', '金融サービスのデジタル化', '2026-2028')">
+                        <div class="tech-id">T16-01</div>
+                        <div class="tech-name">フィンテック</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T17-02', 'AgriFood Tech', '農業生産の効率化・最適化', '2029-2031')">
+                        <div class="tech-id">T17-02</div>
+                        <div class="tech-name">AgriFood Tech</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T18-02', '水素・アンモニア産業', 'クリーン燃料による脱炭素化', '2029-2031')">
+                        <div class="tech-id">T18-02</div>
+                        <div class="tech-name">水素・アンモニア産業</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- レイヤー5: 低抽象度 - 具体的技術・製品 -->
+            <div class="layer">
+                <div class="layer-title">
+                    <span class="abstraction-level">レベル5: 具体的技術・製品</span>
+                    実装レベルの技術・製品群
+                </div>
+                <div class="tech-grid">
+                    <div class="tech-card t2029-2031" onclick="showDetail('T3-04', '全固体電池', '高エネルギー密度・高安全性蓄電池', '2029-2031')">
+                        <div class="tech-id">T3-04</div>
+                        <div class="tech-name">全固体電池</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T6-03', '製造DX', 'スマートファクトリーの実現', '2026-2028')">
+                        <div class="tech-id">T6-03</div>
+                        <div class="tech-name">製造DX</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T6-04', '物流DX', 'サプライチェーンの可視化と最適化', '2026-2028')">
+                        <div class="tech-id">T6-04</div>
+                        <div class="tech-name">物流DX</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T7-03', '業務の自動化と自律化', 'RPA・AI活用による業務効率化', '2026-2028')">
+                        <div class="tech-id">T7-03</div>
+                        <div class="tech-name">業務の自動化と自律化</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T9-07', 'HEV/PHEV/EV', 'ハイブリッド・電気自動車の普及', '2029-2031')">
+                        <div class="tech-id">T9-07</div>
+                        <div class="tech-name">HEV/PHEV/EV</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2032-2035" onclick="showDetail('T9-06', '空飛ぶクルマ', '都市型エアモビリティ', '2032-2035')">
+                        <div class="tech-id">T9-06</div>
+                        <div class="tech-name">空飛ぶクルマ</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #ed8936;"></div>
+                            2032-2035年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2032-2035" onclick="showDetail('T10-04', 'ゲノム編集', 'CRISPR等による遺伝子治療', '2032-2035')">
+                        <div class="tech-id">T10-04</div>
+                        <div class="tech-name">ゲノム編集</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #ed8936;"></div>
+                            2032-2035年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T10-07', '遠隔医療/オンライン診療/デジタル療法', '場所に依存しない医療サービス', '2026-2028')">
+                        <div class="tech-id">T10-07</div>
+                        <div class="tech-name">遠隔医療/オンライン診療</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T11-08', '非侵襲型生体センサー', 'ウェアラブルでの健康モニタリング', '2026-2028')">
+                        <div class="tech-id">T11-08</div>
+                        <div class="tech-name">非侵襲型生体センサー</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T12-04', '協働ロボット', '人間と安全に作業できるロボット', '2026-2028')">
+                        <div class="tech-id">T12-04</div>
+                        <div class="tech-name">協働ロボット</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T12-03', '介護ロボット', '高齢者支援と介護負担軽減', '2029-2031')">
+                        <div class="tech-id">T12-03</div>
+                        <div class="tech-name">介護ロボット</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T13-02', '次世代パワーエレクトロニクス', 'SiC/GaN半導体応用技術', '2026-2028')">
+                        <div class="tech-id">T13-02</div>
+                        <div class="tech-name">次世代パワーエレクトロニクス</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T13-04', 'ウエアラブル/ペースタブル', '常時装着可能なデバイス', '2029-2031')">
+                        <div class="tech-id">T13-04</div>
+                        <div class="tech-name">ウエアラブル/ペースタブル</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T14-06', '超高速無線通信', '5G/Beyond 5Gによる通信革新', '2026-2028')">
+                        <div class="tech-id">T14-06</div>
+                        <div class="tech-name">超高速無線通信</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T15-03', '生分解性プラスチック', '環境負荷低減材料', '2029-2031')">
+                        <div class="tech-id">T15-03</div>
+                        <div class="tech-name">生分解性プラスチック</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T15-06', '3Dアディティブ・マニュファクチャリング', '積層造形による設計自由度向上', '2026-2028')">
+                        <div class="tech-id">T15-06</div>
+                        <div class="tech-name">3Dアディティブ・マニュファクチャリング</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2032-2035" onclick="showDetail('T17-03', '細胞農業', '培養肉・培養タンパク質生産', '2032-2035')">
+                        <div class="tech-id">T17-03</div>
+                        <div class="tech-name">細胞農業</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #ed8936;"></div>
+                            2032-2035年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2032-2035" onclick="showDetail('T19-03', '小型衛星', '低コスト宇宙利用の実現', '2032-2035')">
+                        <div class="tech-id">T19-03</div>
+                        <div class="tech-name">小型衛星</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #ed8936;"></div>
+                            2032-2035年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T19-10', '新世代ドローン（無人機）', '物流・監視への活用', '2029-2031')">
+                        <div class="tech-id">T19-10</div>
+                        <div class="tech-name">新世代ドローン（無人機）</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- レイヤー6: 最低抽象度 - ニッチ技術・応用 -->
+            <div class="layer">
+                <div class="layer-title">
+                    <span class="abstraction-level">レベル6: ニッチ技術・応用</span>
+                    特定用途向けの専門技術群
+                </div>
+                <div class="tech-grid">
+                    <div class="tech-card tbeyond-2035" onclick="showDetail('T1-05', '台風制御/台風発電', '気象コントロール技術', '2035年以降')">
+                        <div class="tech-id">T1-05</div>
+                        <div class="tech-name">台風制御/台風発電</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #e53e3e;"></div>
+                            2035年以降
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T2-03', '代替フード', '植物由来・培養肉などの代替タンパク質', '2029-2031')">
+                        <div class="tech-id">T2-03</div>
+                        <div class="tech-name">代替フード</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2032-2035" onclick="showDetail('T3-03', '有機系太陽電池', 'フレキシブル太陽電池', '2032-2035')">
+                        <div class="tech-id">T3-03</div>
+                        <div class="tech-name">有機系太陽電池</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #ed8936;"></div>
+                            2032-2035年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T5-07', '香りビジネス', '嗅覚を活用した体験設計', '2026-2028')">
+                        <div class="tech-id">T5-07</div>
+                        <div class="tech-name">香りビジネス</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T5-08', 'ブレインマーケティング', '脳科学を活用したマーケティング', '2029-2031')">
+                        <div class="tech-id">T5-08</div>
+                        <div class="tech-name">ブレインマーケティング</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T9-08', 'ワイヤレス給電（EV/PHEV）', '非接触充電技術', '2029-2031')">
+                        <div class="tech-id">T9-08</div>
+                        <div class="tech-name">ワイヤレス給電（EV/PHEV）</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2032-2035" onclick="showDetail('T10-08', 'スマート治療室', 'IoT統合手術室', '2032-2035')">
+                        <div class="tech-id">T10-08</div>
+                        <div class="tech-name">スマート治療室</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #ed8936;"></div>
+                            2032-2035年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T11-07', '体内時計とサーカディアンリズム', '生体リズムに基づく健康管理', '2029-2031')">
+                        <div class="tech-id">T11-07</div>
+                        <div class="tech-name">体内時計とサーカディアンリズム</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2029-2031" onclick="showDetail('T12-05', '配達ロボット', 'ラストワンマイル配送自動化', '2029-2031')">
+                        <div class="tech-id">T12-05</div>
+                        <div class="tech-name">配達ロボット</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #4299e1;"></div>
+                            2029-2031年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2032-2035" onclick="showDetail('T15-02', 'メタマテリアル', '自然界にない特性を持つ材料', '2032-2035')">
+                        <div class="tech-id">T15-02</div>
+                        <div class="tech-name">メタマテリアル</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #ed8936;"></div>
+                            2032-2035年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2026-2028" onclick="showDetail('T15-04', 'プロセスインフォマティクス', '製造プロセスのAI最適化', '2026-2028')">
+                        <div class="tech-id">T15-04</div>
+                        <div class="tech-name">プロセスインフォマティクス</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #48bb78;"></div>
+                            2026-2028年
+                        </div>
+                    </div>
+                    
+                    <div class="tech-card t2032-2035" onclick="showDetail('T19-12', '超音速旅客機', '次世代高速航空輸送', '2032-2035')">
+                        <div class="tech-id">T19-12</div>
+                        <div class="tech-name">超音速旅客機</div>
+                        <div class="tech-timeline">
+                            <div class="timeline-icon" style="background: #ed8936;"></div>
+                            2032-2035年
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2 id="modal-title"></h2>
+            <p id="modal-description"></p>
+            <p id="modal-timeline"></p>
+        </div>
+    </div>
+
+    <script>
+        function showDetail(id, name, description, timeline) {
+            document.getElementById('modal-title').textContent = id + ': ' + name;
+            document.getElementById('modal-description').textContent = description;
+            document.getElementById('modal-timeline').innerHTML = '<strong>実現時期:</strong> ' + timeline;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // モーダル外クリックで閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

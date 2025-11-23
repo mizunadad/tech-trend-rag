@@ -1,0 +1,16 @@
+*:Zone.Identifier
+
+# 巨大なPython仮想環境と依存関係
+venv/
+__pycache__/
+*.pyc
+
+# Node.jsの依存関係
+functions/node_modules/
+
+# サービスアカウントキー
+serviceAccountKey.json
+.env
+
+# Git一時ファイル
+.firebase/
