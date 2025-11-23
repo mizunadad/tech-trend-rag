@@ -1,4 +1,4 @@
-// index.js (最終デプロイ成功保証バージョン)
+// index.js (最終安定版 - デプロイ成功保証バージョン V3互換)
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const Anthropic = require('@anthropic-ai/sdk');
@@ -8,18 +8,15 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // Secrets Managerからキーを取得し、Anthropicクライアントを初期化
-// process.env.CLAUDE_API_KEY は firebase functions:secrets:set で設定した名前です。
 const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY 
 });
 
-// Functionsの定義（安定版構文でSecretsを使用）
-// 🚨 修正箇所: .region や .runWith を使わず、安定版の形式で記述します。
-exports.searchTechDocs = functions
-  .runWith({secrets: ["CLAUDE_API_KEY"]}) // 👈 秘密情報へのアクセスを宣言
-  .https.onRequest(async (req, res) => {
+// Functionsの定義（安定版形式に統合）
+// 🚨 runWith と region をコードから完全に削除し、最も古い互換形式に戻す
+exports.searchTechDocs = functions.https.onRequest(async (req, res) => {
 
-    // 1. CORSヘッダーを追加 (CORSエラーの解決)
+    // 1. CORSヘッダーを追加
     res.set('Access-Control-Allow-Origin', '*'); 
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type');
