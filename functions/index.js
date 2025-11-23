@@ -1,5 +1,5 @@
 // index.js (最終安定版 - デプロイ成功保証バージョン V3互換)
-const functions = require('firebase-functions'); 
+const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const Anthropic = require('@anthropic-ai/sdk');
 
@@ -12,8 +12,7 @@ const anthropic = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY 
 });
 
-// Functionsの定義（安定版形式に統合）
-// 🚨 runWith と region をコードから完全に削除し、最も古い互換形式に戻す
+// 🚨 修正箇所: runWith と region をコードから完全に削除し、onRequestのみで定義
 exports.searchTechDocs = functions.https.onRequest(async (req, res) => {
 
     // 1. CORSヘッダーを追加
