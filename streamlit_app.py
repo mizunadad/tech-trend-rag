@@ -25,11 +25,6 @@ authenticator = stauth.Authenticate(
     # users_config['preauthorized']
 )
 
-# --- 2. ログイン処理とUI ---
-# 修正後のクリーンな記述 (この形式に統一します)
-#name, authentication_status, username = authenticator.login('家族向け技術相談システム ログイン', 'main')
-
-
 name, authentication_status, username = authenticator.login('technology discussions login', 'main')
 
 
