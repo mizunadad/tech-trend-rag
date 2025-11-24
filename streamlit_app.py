@@ -26,10 +26,8 @@ authenticator = stauth.Authenticate(
 )
 
 # --- 2. ログイン処理とUI ---
-name, authentication_status, username = authenticator.login(
-        '家族向け技術相談システム ログイン',
-        'main'
-)
+# 修正後のクリーンな記述 (この形式に統一します)
+name, authentication_status, username = authenticator.login('家族向け技術相談システム ログイン', 'main')
 
 if authentication_status:
     # --- ログイン成功時の処理 ---
