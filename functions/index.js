@@ -1,5 +1,5 @@
 // index.js (最終安定版 - デプロイ成功保証バージョン V3互換)
-const functions = require('firebase-functions'); 
+const functions = require('firebase-functions');  
 const admin = require('firebase-admin');
 const Anthropic = require('@anthropic-ai/sdk');
 
