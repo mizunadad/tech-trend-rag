@@ -6,6 +6,12 @@ const Anthropic = require('@anthropic-ai/sdk');
 // Firebase Admin SDKの初期化
 admin.initializeApp();
 const db = admin.firestore();
+// 🚨 追加箇所: APIキーが空かどうかのデバッグログを追加
+if (!process.env.CLAUDE_API_KEY) {
+    console.error("FATAL SECRETS ERROR: CLAUDE_API_KEY is missing from environment variables!");
+} else {
+    console.log("INFO: CLAUDE_API_KEY loaded successfully.");
+}
 
 // Secrets Managerからキーを取得し、Anthropicクライアントを初期化
 const anthropic = new Anthropic({
