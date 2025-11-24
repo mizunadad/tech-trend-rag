@@ -1,0 +1,9 @@
+streamlit
+pandas
+numpy
+firebase-admin
+sentence-transformers
+# 🚨 家族認証機能を追加するために以下を追記
+streamlit-authenticator
+# 🚨 Claude APIを呼び出すために以下を追記
+anthropic
