@@ -22,7 +22,7 @@ authenticator = stauth.Authenticate(
     users_config['cookie']['name'],
     users_config['cookie']['key'],
     users_config['cookie']['expiry_days'],
-    users_config['preauthorized']
+    # users_config['preauthorized']
 )
 
 # --- 2. ログイン処理とUI ---
