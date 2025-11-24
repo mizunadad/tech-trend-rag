@@ -29,7 +29,7 @@ authenticator = stauth.Authenticate(
 name, authentication_status, username = authenticator.login(
         '家族向け技術相談システム ログイン',
         'main'
-        )
+)
 
 if authentication_status:
     # --- ログイン成功時の処理 ---
