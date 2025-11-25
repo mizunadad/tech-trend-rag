@@ -12,12 +12,12 @@ users_config = {
             'mizunadad': {
                 'email': 'dev@example.com', 
                 'name': '開発者 (あなた)', 
-                'password': '$2b$12$R.S4wB7yXb5Y1Ew8o2sO7O7zY5O7wQ7C7wY7O7vQ7wY7E7sO7rY7O7wQ7'
+                'hashed_password': '$2b$12$R.S4wB7yXb5Y1Ew8o2sO7O7zY5O7wQ7C7wY7O7vQ7wY7E7sO7rY7O7wQ7'
                 }, 
             'son_chem': {
                 'email': 'son_chem@example.com', 
                 'name': '長男 (化学系)', 
-                'password': '$2b$12$R.S4wB7yXb5Y1Ew8o2sO7O7zY5O7wQ7C7wY7O7vQ7wY7E7sO7rY7O7wQ7'
+                'hashed_password': '$2b$12$R.S4wB7yXb5Y1Ew8o2sO7O7zY5O7wQ7C7wY7O7vQ7wY7E7sO7rY7O7wQ7'
                 }
         }
     },
