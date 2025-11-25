@@ -26,8 +26,7 @@ authenticator = stauth.Authenticate(
 )
 
 
-name,authentication_status,username = authenticator.login('technology discussions login','main')
-
+name, authentication_status, username = authenticator.login('technology discussions login', 'main')
 if authentication_status:
     # --- ログイン成功時の処理 ---
     st.sidebar.success(f'ようこそ, {name} さん!')
