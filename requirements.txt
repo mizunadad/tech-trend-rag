@@ -1,9 +1,7 @@
-streamlit
-pandas
-numpy
-firebase-admin
-sentence-transformers
-# 🚨 家族認証機能を追加するために以下を追記
-streamlit-authenticator==0.2.8 
-# 🚨 Claude APIを呼び出すために以下を追記
-anthropic
+streamlit==1.30.0
+numpy==1.26.4
+pandas==2.2.0
+firebase-admin==6.5.0
+sentence-transformers==2.7.0
+streamlit-authenticator==0.2.8
+anthropic==0.25.0
