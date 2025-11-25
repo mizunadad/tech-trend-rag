@@ -9,12 +9,26 @@ import os
 users_config = {
     'credentials': {
         'usernames': {
-            'mizunadad': {'email': 'dev@example.com', 'name': '開発者 (あなた)', 'password': '$2b$12$R.S4wB7yXb5Y1Ew8o2sO7O7zY5O7wQ7C7wY7O7vQ7wY7E7sO7rY7O7wQ7'}, 
-            'son_chem': {'email': 'son_chem@example.com', 'name': '長男 (化学系)', 'password': '$2b$12$R.S4wB7yXb5Y1Ew8o2sO7O7zY5O7wQ7C7wY7O7vQ7wY7E7sO7rY7O7wQ7'}
+            'mizunadad': {
+                'email': 'dev@example.com', 
+                'name': '開発者 (あなた)', 
+                'password': '$2b$12$R.S4wB7yXb5Y1Ew8o2sO7O7zY5O7wQ7C7wY7O7vQ7wY7E7sO7rY7O7wQ7'
+                }, 
+            'son_chem': {
+                'email': 'son_chem@example.com', 
+                'name': '長男 (化学系)', 
+                'password': '$2b$12$R.S4wB7yXb5Y1Ew8o2sO7O7zY5O7wQ7C7wY7O7vQ7wY7E7sO7rY7O7wQ7'
+                }
         }
     },
-    'cookie': {'expiry_days': 30, 'key': 'rag_auth_key', 'name': 'rag_auth_cookie'},
-    'preauthorized': {'emails': ['']}
+    'cookie': {
+        'expiry_days': 30, 
+        'key': 'rag_auth_key', 
+        'name': 'rag_auth_cookie'
+        },
+    'preauthorized': {
+        'emails': ['']
+        }
 }
 
 authenticator = stauth.Authenticate(
@@ -24,12 +38,6 @@ authenticator = stauth.Authenticate(
     users_config['cookie']['expiry_days'],
     # users_config['preauthorized']
 )
-
-
-
-
-
-
 
 name, authentication_status, username = authenticator.login(
         fields='technology discussions login' , #title
