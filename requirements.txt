@@ -1,7 +1,7 @@
-streamlit==1.30.0
-numpy==1.26.4
-pandas==2.2.0
-firebase-admin==6.5.0
-sentence-transformers==2.7.0
-streamlit-authenticator==0.2.8
-anthropic==0.25.0
+streamlit
+pandas
+numpy
+firebase-admin
+sentence-transformers
+streamlit-authenticator # 👈 バージョン指定を解除
+anthropic
