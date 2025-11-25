@@ -25,7 +25,7 @@ authenticator = stauth.Authenticate(
     # users_config['preauthorized']
 )
 
-name, authentication status, username = authenticator.login('technology discussions login', 'main')
+name, authentication status, username = authenticator.login('technology discussions login','main')
 
 if authentication_status:
     # --- ログイン成功時の処理 ---
