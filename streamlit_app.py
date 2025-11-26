@@ -19,15 +19,24 @@ if "password_correct" not in st.session_state:
 
 if not st.session_state["password_correct"]:
     st.title("🔐 技術トレンド相談システム ログイン")
-    
-    # パスワード入力フォーム
-    password_input = st.text_input("パスワード", type="password", on_change=check_password, key="password_input")
-    
-    if st.session_state.get("password_input") and not check_password():
-        st.error('パスワードが間違っています。')
-            
-    st.stop() # パスワードが合わない場合は、ここで処理を停止
 
+    # 🚨 修正箇所: on_changeイベントを使わず、フォームとして処理します
+    with st.form("login_form"):
+        # st.session_state["password_input"]に値が入る
+        password_input = st.text_input("パスワード", type="password", key="password_input_key") 
+        submitted = st.form_submit_button("Login")
+
+        if submitted:
+            # 入力値をセッションに一時保存し、check_passwordを呼び出す
+            st.session_state["password_input"] = password_input
+            
+            if check_password():
+                st.session_state["password_correct"] = True
+                st.rerun() # 認証成功後、アプリを再実行してメイン画面へ
+            else:
+                st.error('パスワードが間違っています。')
+            
+    st.stop()
 # --- 3. 認証成功後のメインコンテンツ ---
 # この下にRAGロジックが続きます
 
