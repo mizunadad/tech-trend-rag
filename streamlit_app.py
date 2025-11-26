@@ -11,13 +11,18 @@ def setup_firestore():
     # Firestore接続に必要なライブラリをインポート
     import firebase_admin
     from firebase_admin import credentials, firestore
+    import json
 
     # 既に初期化済みでなければ、st.secretsから認証情報を読み込み初期化
     if not firebase_admin._apps:
-        # st.secrets の [firebase] セクション（TOML）を認証情報として使用
-        cred = credentials.Certificate(st.secrets["firebase"])
+        # 🚨 修正箇所: Secretsから JSON文字列を読み込み、Python辞書に変換
+        cert_json_string = st.secrets["firebase"]["cert_json"]
+        cert_dict = json.loads(cert_json_string) # JSON文字列をPython辞書に変換
+
+        # 認証情報を辞書として使用
+        cred = credentials.Certificate(cert_dict)
         firebase_admin.initialize_app(cred)
-        
+
     return firestore.client()
 
 # --- 認証成功後のメインコンテンツ内を修正 ---
