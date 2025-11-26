@@ -54,7 +54,7 @@ def run_rag_search(query):
         """
         
         response = client.messages.create(
-            model="claude-3-sonnet-20240229", # 安定版エイリアス
+            model="claude-3-5-sonnet", # 安定版エイリアス
             max_tokens=2000,
             messages=[
                 {"role": "user", "content": prompt}
