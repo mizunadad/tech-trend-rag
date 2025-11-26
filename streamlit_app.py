@@ -3,6 +3,7 @@ import os
 import firebase_admin
 from firebase_admin import credentials, firestore 
 from sentence_transformers import SentenceTransformer # 検索に必要なため追加
+import anthropic
 
 # Firestore接続のためのユーティリティ関数
 # この関数は、st.secrets["firebase"] から鍵を取得し、Firebase Admin SDKを初期化します。
@@ -50,7 +51,7 @@ def run_rag_search(query):
         context_text = "\n\n---\n\n".join([doc.to_dict().get('content', '') for doc in docs])
         
         # 3. Claude APIの呼び出し
-        client = Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
+        client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
         
         prompt = f"""
         あなたは家族向け技術トレンド相談エキスパートです。以下の技術情報を参考に、質問に回答してください。
