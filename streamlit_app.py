@@ -142,7 +142,7 @@ st.markdown("#### 家族それぞれのキャリアサポートを目的とし�
 
 # 🚨 RAGロジック（未実装部分）
 query = st.text_area("質問を入力してください", height=100)
-if st.button("🔍 検索実行", type="primary"):
+if st.button("🔍 検索実行", type="primary",key='rag_search_button'):
     if query:
         with st.spinner("RAG検索を実行中... Firestore接続をテスト中..."):
             #接続テストを実行
@@ -152,6 +152,6 @@ if st.button("🔍 検索実行", type="primary"):
         st.error("質問を入力してください。")
         
 # --- ログアウトボタン（簡易実装） ---
-if st.button("ログアウト"):
+if st.button("ログアウト",key='logout_button_main'):
     st.session_state["password_correct"] = False
     st.rerun()
