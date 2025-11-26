@@ -28,23 +28,75 @@ def setup_firestore():
 # --- 認証成功後のメインコンテンツ内を修正 ---
 
 # 🚨 RAG検索ロジックのプレースホルダー
+# streamlit_app.py の run_rag_search() 関数全体を置き換えます
+
 def run_rag_search(query):
-    # 接続テストとデータ存在確認
+    # 接続が成功しているため、そのまま DB クライアントを取得
+    db = setup_firestore()
+    
+    # 1. 質問のベクトル化 (簡易的な実装)
+    # NOTE: 実際にはここで質問文をベクトル化し、Firestoreでベクトル検索を行う必要があります。
+    #       今回は、ベクトル検索の実装はスキップし、全ドキュメントからランダムに取得する簡易RAGを実装します。
+    
     try:
-        # st.cache_resourceによって接続が使い回されます
-        db = setup_firestore() 
+        # 簡易RAG検索: Firestoreからランダムな関連ドキュメントを5件取得
+        docs_ref = db.collection("tech_docs").limit(5).stream()
+        docs = list(docs_ref)
         
-        # 簡易データ確認（'tech_docs'コレクションの最初の5件を取得）
-        doc_count = len(list(db.collection("tech_docs").limit(5).stream()))
+        if not docs:
+            return "データが見つかりません。Firestoreにデータが正しく投入されているか確認してください。"
+
+        # 2. コンテキストの構築
+        context_text = "\n\n---\n\n".join([doc.to_dict().get('content', '') for doc in docs])
         
-        if doc_count > 0:
-            return f"✅ Firestore接続成功！ 'tech_docs' コレクションにデータ {doc_count} 件以上を確認しました。次はRAG検索を実装します。"
-        else:
-            return "⚠️ Firestore接続成功。しかし 'tech_docs' コレクションにデータが見つかりません。データの再投入が必要です。"
+        # 3. Claude APIの呼び出し
+        client = Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
+        
+        prompt = f"""
+        あなたは家族向け技術トレンド相談エキスパートです。以下の技術情報を参考に、質問に回答してください。
+        【技術情報】
+        {context_text}
+        【質問】
+        {query}
+
+        【回答形式】
+        - 簡潔で分かりやすく
+        - 必ず具体的な技術名と出典（文書タイトル）を挙げる
+        """
+        
+        response = client.messages.create(
+            model="claude-3-sonnet-20240229",
+            max_tokens=2000,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        # 4. 結果の整形と返却
+        sources = [doc.to_dict().get('title', '不明') for doc in docs]
+        
+        return {
+            "answer": response.content[0].text,
+            "sources": sources
+        }
             
     except Exception as e:
-        return f"❌ Firestore接続失敗: {e}"
+        # Claude APIキーが無効、またはFirestore接続が切れた場合
+        return f"❌ RAG検索失敗: サーバー内部エラーが発生しました ({e})"
 
+# 既存の検索実行ボタンのロジックを修正
+if st.button("🔍 検索実行", type="primary"):
+    if query:
+        with st.spinner("RAG検索を実行中..."):
+            result_dict = run_rag_search(query)
+            
+            if isinstance(result_dict, str):
+                st.error(result_dict)
+            else:
+                st.markdown(f"**💡 回答**\n\n{result_dict['answer']}")
+                st.markdown(f"**📚 参考資料:** {', '.join(result_dict['sources'])}")
+    else:
+        st.error("質問を入力してください。")
 
 
 # --- 1. 認証設定 (Secretsを使用) ---
