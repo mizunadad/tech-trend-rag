@@ -80,8 +80,7 @@ def run_rag_search(query):
         )
         
         # 5. 結果の整形と返却
-        sources = [doc.get('title', '不明') for doc.get('title', '不明') for doc in top_docs]
-        
+        sources = [doc.get('title', '不明') for doc in top_docs] 
         return {
             "answer": response.content[0].text,
             "sources": sources
