@@ -114,7 +114,7 @@ if "password_correct" not in st.session_state:
 
 if not st.session_state["password_correct"]:
     st.title("⚔️ CAREER DATA VAULT: AUTH")
-    st.markdwown("##### 次世代戦略AIへアクセスするには、認証が必要です。")
+    st.markdown("##### 次世代戦略AIへアクセスするには、認証が必要です。")
     
     with st.form("login_form"):
         st.text_input("パスワード", type="password", key="password_input")
