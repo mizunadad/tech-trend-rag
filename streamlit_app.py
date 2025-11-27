@@ -129,16 +129,16 @@ if not st.session_state["password_correct"]:
 
 # --- 4. 認証成功後のメインコンテンツ ---
 
-st.title("🔬 技術トレンド相談システム (Streamlit版)")
-st.markdown("#### 家族それぞれのキャリアサポートを目的としたRAGシステムです。")
-
+st.title("🧬 NEXT-GEN CAREER BRAIN")
+st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
+st.markdown("---")
 # 🚨 修正箇所: ここで st.text_area を定義することで、queryがグローバルスコープで使えるようにする
-query = st.text_area("質問を入力してください", height=100) 
+query = st.text_area("Enter Your Question", height=100) 
 
 # 🚨 修正箇所: ボタンは一つだけ定義し、キーを追加
-if st.button("🔍 検索実行", type="primary", key='rag_search_button'):
+if st.button("🔍 Researching Techs ", type="primary", key='rag_search_button'):
     if query:
-        with st.spinner("RAG検索を実行中..."):
+        with st.spinner("Analyzing 700 Data Feeds... Standby for Analysis."):
             result = run_rag_search(query)
             
             if isinstance(result, str):
