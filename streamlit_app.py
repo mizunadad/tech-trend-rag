@@ -113,7 +113,8 @@ if "password_correct" not in st.session_state:
     st.session_state["password_correct"] = False
 
 if not st.session_state["password_correct"]:
-    st.title("🔐 技術トレンド相談システム ログイン")
+    st.title("⚔️ CAREER DATA VAULT: AUTH")
+    st.markdwown("##### 次世代戦略AIへアクセスするには、認証が必要です。")
     
     with st.form("login_form"):
         st.text_input("パスワード", type="password", key="password_input")
@@ -129,10 +130,13 @@ if not st.session_state["password_correct"]:
     st.stop() # パスワードが合わない場合は、ここで処理を停止
 
 # --- 4. 認証成功後のメインコンテンツ ---
-
 st.title("🧬 NEXT-GEN CAREER BRAIN")
 st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
 st.markdown("---")
+# 🚨 修正箇所: ログイン成功後の歓迎メッセージを追加（ユーザー名に依存しない）
+st.markdown("##### **[ACCESS GRANTED]**。KNOWLEDGE SYSTEM READY FOR QUERY.")
+st.markdown("---")
+
 # 🚨 修正箇所: ここで st.text_area を定義することで、queryがグローバルスコープで使えるようにする
 query = st.text_area("Enter Your Question ...🤣日本語でええよ🤣", height=100) 
 
