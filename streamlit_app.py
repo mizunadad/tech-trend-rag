@@ -69,7 +69,17 @@ def run_rag_search(query):
         # Claude API呼び出し... (以下、以前のコードと同じ)
         client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
         
-        prompt = f"""...""" # プロンプトは省略
+        prompt = f"""
+        あなたは家族向け技術トレンド相談エキスパートです。以下の技術情報を参考に、質問に回答してください。
+        【技術情報】
+        {context_text}
+        【質問】
+        {query}
+
+        【回答形式】
+        - 簡潔で分かりやすく
+        - 必ず具体的な技術名と出典（文書タイトル）を挙げる
+        """
         
         response = client.messages.create(
             model="claude-3-haiku-20240307", # 👈 動作確認済みのHaikuを使用
