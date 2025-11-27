@@ -93,7 +93,8 @@ def run_rag_search(query):
         sources = [doc.get('title', '不明') for doc in top_docs] 
         return {
             "answer": response.content[0].text,
-            "sources": sources
+            "sources": sources,
+            "context": context_text # 🚨 修正箇所: context_text を返却に追加
         }
             
     except Exception as e:
@@ -136,7 +137,7 @@ st.markdown("---")
 query = st.text_area("Enter Your Question ...🤣日本語でええよ🤣", height=100) 
 
 # 🚨 修正箇所: ボタンは一つだけ定義し、キーを追加
-if st.button("🔍 Researching Techs ", type="primary", key='rag_search_button'):
+if st.button("🔍 Research Techs ", type="primary", key='rag_search_button'):
     if query:
         with st.spinner("Analyzing 700 Data Feeds... Standby for Analysis."):
             result = run_rag_search(query)
@@ -144,8 +145,16 @@ if st.button("🔍 Researching Techs ", type="primary", key='rag_search_button')
             if isinstance(result, str):
                 st.error(result)
             else:
+                # 1. 回答の表示
                 st.markdown(f"**💡 回答**\n\n{result['answer']}")
+                st.markdown("---")
+
+                # 2. 参考資料タイトルの表示（全対象5つ）
                 st.markdown(f"**📚 参考資料:** {', '.join(result['sources'])}")
+
+                # 3. 🚨 修正箇所: 原文コンテンツの表示 (展開可能なセクションとして)
+                with st.expander("📄 参照された原文コンテンツを確認する"):
+                    st.code(result['context'], language="markdown")
     else:
         st.error("質問を入力してください。")
         
