@@ -1,3 +1,5 @@
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 import streamlit as st
 import os 
 import json
@@ -23,46 +25,62 @@ def setup_firestore():
     return firestore.client()
 
 # --- 2. RAG検索ロジック ---
+# streamlit_app.py の run_rag_search() 関数全体を置き換えます
+# setup_firestore() はそのままにしておいてください
+
+@st.cache_resource
+def load_embedding_model():
+    # 以前、データ投入で使用したMiniLMモデルをロード
+    return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+
 def run_rag_search(query):
     db = setup_firestore()
+    model = load_embedding_model() # Embeddingモデルのロード
     
     try:
-        # 簡易RAG検索: Firestoreからランダムな関連ドキュメントを5件取得
-        docs_ref = db.collection("tech_docs").limit(5).stream()
-        docs = list(docs_ref)
+        # 1. 質問のベクトル化
+        query_embedding = model.encode(query)
         
-        if not docs:
-            return "データが見つかりません。Firestoreにデータが正しく投入されているか確認してください。"
+        # 2. 全Firestoreドキュメントの取得（メモリにロード）
+        # NOTE: 700件程度ならメモリにロード可能ですが、データが増えたら専用DBが必要です。
+        all_docs = []
+        for doc in db.collection("tech_docs").stream():
+            data = doc.to_dict()
+            data['doc_id'] = doc.id
+            all_docs.append(data)
 
-        # 2. コンテキストの構築
-        context_text = "\n\n---\n\n".join([doc.to_dict().get('content', '') for doc in docs])
+        if not all_docs:
+            return "データが見つかりません。"
+
+        # 3. 類似度計算とTop-5の選択
+        # Firestoreの embedding（リスト形式）をnumpy配列に変換
+        doc_embeddings = np.array([doc['embedding'] for doc in all_docs])
         
-        # 3. Claude APIの呼び出し
-        # SecretsからCLAUDE_API_KEYを取得
+        # コサイン類似度を計算
+        similarities = cosine_similarity(query_embedding.reshape(1, -1), doc_embeddings).flatten()
+        
+        # 類似度の高い順にインデックスを取得
+        top_indices = np.argsort(similarities)[::-1][:5] # Top 5
+        top_docs = [all_docs[i] for i in top_indices]
+
+        # 4. コンテキストの構築とClaude API呼び出し (変更なし)
+        context_text = "\n\n---\n\n".join([doc.get('content', '') for doc in top_docs])
+        
+        # Claude API呼び出し... (以下、以前のコードと同じ)
         client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
         
-        prompt = f"""
-        あなたは家族向け技術トレンド相談エキスパートです。以下の技術情報を参考に、質問に回答してください。
-        【技術情報】
-        {context_text}
-        【質問】
-        {query}
-
-        【回答形式】
-        - 簡潔で分かりやすく
-        - 必ず具体的な技術名と出典（文書タイトル）を挙げる
-        """
+        prompt = f"""...""" # プロンプトは省略
         
         response = client.messages.create(
-            model="claude-3-haiku-20240307", # 安定版エイリアス
+            model="claude-3-haiku-20240307", # 👈 動作確認済みのHaikuを使用
             max_tokens=2000,
             messages=[
                 {"role": "user", "content": prompt}
             ]
         )
         
-        # 4. 結果の整形と返却
-        sources = [doc.to_dict().get('title', '不明') for doc in docs]
+        # 5. 結果の整形と返却
+        sources = [doc.get('title', '不明') for doc.get('title', '不明') for doc in top_docs]
         
         return {
             "answer": response.content[0].text,
@@ -70,7 +88,6 @@ def run_rag_search(query):
         }
             
     except Exception as e:
-        # Claude APIキーが無効、またはFirestore接続が切れた場合
         return f"❌ RAG検索失敗: サーバー内部エラーが発生しました ({e})"
 
 # --- 3. 認証ロジック ---
