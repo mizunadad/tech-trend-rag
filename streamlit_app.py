@@ -133,7 +133,7 @@ st.title("🧬 NEXT-GEN CAREER BRAIN")
 st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
 st.markdown("---")
 # 🚨 修正箇所: ここで st.text_area を定義することで、queryがグローバルスコープで使えるようにする
-query = st.text_area("Enter Your Question", height=100) 
+query = st.text_area("Enter Your Question ...🤣日本語でええよ🤣", height=100) 
 
 # 🚨 修正箇所: ボタンは一つだけ定義し、キーを追加
 if st.button("🔍 Researching Techs ", type="primary", key='rag_search_button'):
