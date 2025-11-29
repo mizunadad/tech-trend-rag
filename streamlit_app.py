@@ -224,28 +224,31 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
     st.markdown("---")
     st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
+    st.markdown("---")
 
-    # 🚨 診断ロジック: Graphvizがサーバーにあるかチェック
-    if shutil.which("dot") is None:
-        st.error("⚠️ エラー: Graphviz (dotコマンド) が見つかりません。`packages.txt` が正しく配置されているかGitHubを確認してください。")
-    else:
-        # システム図の表示 (Expanderなしで直接表示)
-        st.markdown("#### 🔌 System Architecture")
-        st.graphviz_chart("""
-        digraph RAG {
-            rankdir=LR;
-            node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="sans-serif"];
-            edge [fontname="sans-serif"];
-            User [label="USER", shape=ellipse, fillcolor="#e8f0fe"];
-            DB [label="VECTOR DB", color="blue"];
-            AI [label="GEN-AI", color="red"];
-            Output [label="OUTPUT", shape=note, fillcolor="#d4edda"];
-            User -> DB; DB -> AI; User -> AI; AI -> Output;
-        }
-        """, use_container_width=True)
+    # 🚨 修正: st.expander を削除し、タイトルと図を直接配置
+    st.markdown("#### 🔌 System Architecture")
+    
+    st.graphviz_chart("""
+    digraph RAG {
+        rankdir=LR;
+        # シンプルな設定
+        node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="sans-serif"];
+        edge [fontname="sans-serif"];
+
+        User [label="USER", shape=ellipse, fillcolor="#e8f0fe"];
+        DB [label="VECTOR DB", color="blue"];
+        AI [label="GEN-AI", color="red"];
+        Output [label="OUTPUT", shape=note, fillcolor="#d4edda"];
+
+        User -> DB [label="Search"];
+        DB -> AI [label="Context"];
+        User -> AI [label="Query"];
+        AI -> Output [label="Answer"];
+    }
+    """, use_container_width=True)
 
     st.markdown("---")
-    
     # ステート管理
     if "rag_result" not in st.session_state: st.session_state.rag_result = None
     if "last_query" not in st.session_state: st.session_state.last_query = ""
