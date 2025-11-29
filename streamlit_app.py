@@ -190,6 +190,41 @@ def generate_thought_expansion(topic, mode):
     except Exception as e:
         return None
 
+# --- 新機能: 技術階層マップ生成ロジック ---
+def generate_tech_hierarchy(topic):
+    client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
+    
+    prompt = f"""
+    You are a technology taxonomist. Create a hierarchical map for the topic: '{topic}'.
+    Identify:
+    1. Parent category (Broader field)
+    2. The topic itself (Central node)
+    3. Child technologies (Components/Sub-fields)
+    4. Related technologies (Siblings)
+
+    Output format:
+    Generate ONLY a valid Graphviz DOT language code.
+    - Use 'digraph G'
+    - Use rectangular nodes for clarity.
+    - Do not include any markdown backticks (```) or explanation. Just the code.
+    - Labels must be in Japanese.
+    """
+    
+    try:
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        # 余計な文字列が含まれていたら除去（簡易処理）
+        dot_code = response.content[0].text
+        if "```" in dot_code:
+            dot_code = dot_code.replace("```graphviz", "").replace("```", "")
+        return dot_code.strip()
+    except Exception as e:
+        return None
+
+
 # --- 3. データ全件取得関数 (カタログ用) ---
 @st.cache_data(ttl=600) # 10分間キャッシュ
 def get_all_data_as_df():
@@ -340,6 +375,18 @@ if app_mode == "💬 AIチャット (RAG)":
                 
                 for item in data.get('items', []):
                     st.write(f"• {item}")
+            
+            # === 技術マップ機能 ===
+            st.markdown("")
+            if st.button("🕸️ 技術体系マップを表示する", key="btn_map", use_container_width=True):
+                with st.spinner("Mapping Technology Landscape..."):
+                    dot_code = generate_tech_hierarchy(st.session_state.last_query)
+                    if dot_code:
+                        st.success("✅ マップ生成完了")
+                        st.graphviz_chart(dot_code) # 👈 これだけで図画できます！
+                        st.caption("※ AIが生成した概念図です。")
+                    else:
+                        st.error("マップの生成に失敗しました。")
 
             # === エンタメ機能エリア ===
             st.markdown("---")
