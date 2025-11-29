@@ -1,5 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components # 👈 追加
+import base64
 import os 
 import json
 import firebase_admin
@@ -24,21 +25,16 @@ def setup_firestore():
             return None
     return firestore.client()
 
-# --- Mermaid図の描画関数 ---
-def st_mermaid(code: str, height=400):
-    components.html(
-        f"""
-        <pre class="mermaid">
-            {code}
-        </pre>
-        <script type="module">
-            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-            mermaid.initialize({{ startOnLoad: true }});
-        </script>
-        """,
-        height=height,
-        scrolling=True
-    )
+# --- Mermaid図の描画関数 (画像変換版: 確実な表示) ---
+def st_mermaid(graph_code):
+    # コードをBase64エンコードして、画像生成サービスのURLを作成
+    graphbytes = graph_code.encode("utf8")
+    base64_bytes = base64.urlsafe_b64encode(graphbytes)
+    base64_string = base64_bytes.decode("ascii")
+    
+    # mermaid.ink を使用して画像として表示
+    url = f"https://mermaid.ink/img/{base64_string}"
+    st.image(url, use_container_width=True)
 
 # --- 2. RAG検索ロジック ---
 @st.cache_resource
