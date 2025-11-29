@@ -255,38 +255,44 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
     st.markdown("---")
     st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
+    st.markdown("---")
+
+    # 🚨 修正: with st.expander(...) を削除し、直接表示します
+    st.markdown("#### 🔌 System Architecture")
     
-    # --- システムフロー図 (標準Graphviz版) ---
-    # シンプルで確実なDOT記述に戻しました
-    with st.expander("🔌 System Architecture (View Flow)"):
-        st.graphviz_chart("""
-        digraph RAG {
-            rankdir=LR;
-            node [shape=box, style=filled, fillcolor="#f9f9f9"];
-    
-            User [label="USER", shape=ellipse, fillcolor="#e8f0fe"];
-            DB [label="VECTOR DB\n(700 Reports)", color="blue"];
-            AI [label="GEN-AI\n(Claude 3 Haiku)", color="red"];
-            Output [label="OUTPUT", shape=note, fillcolor="#d4edda"];
-    
-            User -> DB [label="Search"];
-            DB -> AI [label="Context"];
-            User -> AI [label="Query"];
-            AI -> Output [label="Answer"];
+    st.graphviz_chart("""
+    digraph RAG {
+        rankdir=LR;
+        # シンプルな設定に戻して安定性を確保
+        node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="sans-serif"];
+        edge [fontname="sans-serif"];
+
+        User [label="USER", shape=ellipse, fillcolor="#e8f0fe"];
+        DB [label="VECTOR DB\n(700 Reports)", color="blue"];
+        AI [label="GEN-AI\n(Claude 3 Haiku)", color="red"];
+        Output [label="OUTPUT", shape=note, fillcolor="#d4edda"];
+
+        User -> DB [label="Search"];
+        DB -> AI [label="Context"];
+        User -> AI [label="Query"];
+        AI -> Output [label="Answer"];
+        
+        # 拡張機能の表示
+        subgraph cluster_ext {
+            label = "Expansion";
+            style=dashed;
+            color=gray;
+            DeepDive [label="Deep Dive"];
+            Map [label="Tech Map"];
+            Fun [label="Entertainment"];
             
-            subgraph cluster_ext {
-                label = "Expansion";
-                style=dashed;
-                DeepDive [label="Deep Dive"];
-                Map [label="Tech Map"];
-                Fun [label="Entertainment"];
-                
-                Output -> DeepDive [style=dotted];
-                Output -> Map [style=dotted];
-                Output -> Fun [style=dotted];
-            }
+            Output -> DeepDive [style=dotted];
+            Output -> Map [style=dotted];
+            Output -> Fun [style=dotted];
         }
-        """, use_container_width=True)
+    }
+    """, use_container_width=True)
+
     st.markdown("---")
 
     # ステート初期化
