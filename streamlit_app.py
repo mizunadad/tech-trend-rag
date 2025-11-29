@@ -331,7 +331,13 @@ if app_mode == "💬 AIチャット (RAG)":
             # 深掘り結果の表示
             if st.session_state.thought_expansion:
                 data = st.session_state.thought_expansion
-                st.info(f"**{data.get('title', 'Analysis Result')}**")
+
+                # 🚨 修正箇所: 結果のタイトル表示
+                st.markdown(f"### {data.get('title', 'Analysis Result')}")
+                
+                # 🚨 追加箇所: RAGではないことを明記する注釈
+                st.caption("※ この分析は、AIが広い視野で生成したアイデアです。必ずしもデータベース内の技術資料に基づいているとは限りません。")
+                
                 for item in data.get('items', []):
                     st.write(f"• {item}")
 
