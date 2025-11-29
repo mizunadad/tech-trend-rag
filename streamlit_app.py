@@ -1,7 +1,6 @@
 import streamlit as st
 import os 
 import json
-import shutil # 診断用
 import firebase_admin
 from firebase_admin import credentials, firestore
 from sentence_transformers import SentenceTransformer
@@ -110,57 +109,90 @@ def call_claude_json(prompt):
         st.error(f"AI生成エラー: {e}")
         return None
 
-# --- 新機能群 ---
+# --- 新機能: 未来の名刺 (日本語強制 & 年収表示強化) ---
 def generate_future_career(topic):
     prompt = f"""
-    You are a visionary career consultant in the year 2035.
-    Based on the technology topic: '{topic}', create a fictional, futuristic job profile.
+    あなたは2035年のキャリアコンサルタントです。
+    トピック: '{topic}' に基づいて、未来的でかっこいい架空の職業プロフィールを作成してください。
+
+    【重要】
+    - 出力する値はすべて「日本語」で記述してください。
+    - "job_title" は「英語 / 日本語」の形式にしてください。
+    
     Output format (JSON):
     {{
-        "job_title": "Job Title (Japanese)",
-        "estimated_salary": "Annual salary (JPY)",
-        "required_skills": ["Skill 1", "Skill 2"],
-        "mission": "Short mission statement."
+        "job_title": "英語名 / 日本語名",
+        "estimated_salary": "15,000,000 JPY",
+        "required_skills": ["スキル1", "スキル2", "スキル3"],
+        "mission": "短く、情熱的なミッションステートメント"
     }}
     Only output the JSON.
     """
     return call_claude_json(prompt)
 
+# --- 新機能: 未来日記 (日本語強制) ---
 def generate_future_diary(topic):
     prompt = f"""
-    You are a novelist. Write a short diary entry set in 2035 where '{topic}' is normal.
+    あなたは小説家です。2035年を舞台に、'{topic}' が日常になった世界のショートショート日記を書いてください。
+    
+    【重要】
+    - 全文「日本語」で記述してください。
+    
     Output format (JSON):
     {{
-        "date": "2035/MM/DD",
-        "title": "Title",
-        "author_profile": "Profile",
-        "content": "Diary content..."
+        "date": "2035年X月X日 (天気)",
+        "title": "タイトル",
+        "author_profile": "例: 14歳 中学生",
+        "content": "日記の本文（300文字程度）..."
     }}
     Only output the JSON.
     """
     return call_claude_json(prompt)
 
+# --- 新機能: 思考の深掘り (日本語強制) ---
 def generate_thought_expansion(topic, mode):
     instructions = {
-        "abstract": "Identify superordinate concepts.",
-        "concrete": "List specific applications in 2030.",
-        "analogous": "Suggest unexpected combinations."
+        "abstract": "この技術の上位概念、マクロトレンド、なぜ重要かを分析してください。",
+        "concrete": "2030年における具体的な応用例、製品、産業をリストアップしてください。",
+        "analogous": "意外な組み合わせ、他分野への転用、アナロジーを提案してください。"
     }
+    titles = {
+        "abstract": "抽象化 (上位概念・トレンド)",
+        "concrete": "具体化 (2030年の応用例)",
+        "analogous": "横展開 (異分野結合)"
+    }
+    
     prompt = f"""
-    Analyze: '{topic}'. {instructions.get(mode, "")}
-    Output format (JSON): {{"title": "Title", "items": ["Item 1", "Item 2"]}}
+    あなたは技術ストラテジストです。トピック: '{topic}' を分析してください。
+    指示: {instructions.get(mode, "")}
+    
+    【重要】
+    - 全ての項目を「日本語」で出力してください。
+
+    Output format (JSON):
+    {{
+        "title": "{titles.get(mode, '分析結果')}",
+        "items": ["項目1", "項目2", "項目3", "項目4", "項目5"]
+    }}
     Only output the JSON.
     """
     return call_claude_json(prompt)
 
+# --- 新機能: 技術階層マップ (ロバスト性向上) ---
 def generate_tech_hierarchy(topic):
     client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
     prompt = f"""
-    Create a hierarchical map for: '{topic}'.
+    Create a hierarchical technology map for the user's query: '{topic}'.
+    
+    IMPORTANT:
+    - If the query is a long sentence, extract the main keywords first.
+    - Labels MUST be in Japanese.
+    - Use concise labels (short words).
+    
     Output ONLY valid Graphviz DOT code.
     - Use 'digraph G'
-    - Use rectangular nodes.
-    - Labels in Japanese.
+    - Use 'node [shape=box, style=filled, fillcolor="white"]'
+    - Do not include markdown backticks.
     """
     try:
         response = client.messages.create(
@@ -173,6 +205,7 @@ def generate_tech_hierarchy(topic):
     except:
         return None
 
+# --- 3. データ全件取得関数 ---
 @st.cache_data(ttl=600)
 def get_all_data_as_df():
     db = setup_firestore()
@@ -183,7 +216,7 @@ def get_all_data_as_df():
         docs_list.append({"Title": d.get('title', ''), "Category": d.get('category', '')})
     return pd.DataFrame(docs_list)
 
-# --- 認証 ---
+# --- 4. 認証ロジック ---
 def check_password():
     if st.session_state.get("password_input") == st.secrets.get("APP_PASSWORD"):
         del st.session_state["password_input"] 
@@ -195,6 +228,7 @@ if "password_correct" not in st.session_state:
 
 if not st.session_state["password_correct"]:
     st.title("⚔️ CAREER DATA VAULT: AUTH")
+    st.markdown("##### 次世代戦略AIへアクセスするには、認証が必要です。")
     with st.form("login_form"):
         st.text_input("パスワード", type="password", key="password_input")
         if st.form_submit_button("Login"):
@@ -205,7 +239,8 @@ if not st.session_state["password_correct"]:
                 st.error('パスワードが間違っています。')
     st.stop() 
 
-# --- メインアプリ ---
+# --- 5. メインアプリ画面 ---
+
 st.sidebar.title("🔧 Control Panel")
 app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧"])
 
@@ -224,56 +259,36 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
     st.markdown("---")
     st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
-    st.markdown("---")
 
-    # 🚨 修正: st.expander を削除し、タイトルと図を直接配置
+    # 🔌 システムフロー図
     st.markdown("#### 🔌 System Architecture")
-    
-    # 🚨 修正: RAGと拡張機能を並列（Parallel）に描画する図に変更
     st.graphviz_chart("""
     digraph RAG {
         rankdir=LR;
-        # ノードとエッジの共通設定
         node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="sans-serif"];
-        edge [fontname="sans-serif", fontsize=10];
-
-        # 主要アクター
-        User [label="USER\n(Query)", shape=ellipse, fillcolor="#e8f0fe"];
-        DB [label="VECTOR DB\n(700 Reports)", color="blue"];
-        AI [label="GEN-AI\n(Claude 3)", color="red", style="filled,rounded"];
-
-        # 1. RAGフロー (メインの出力)
-        RAG_Out [label="RAG OUTPUT\n(Fact Answer)", shape=note, fillcolor="#d4edda"];
-
-        # 2. 拡張機能フロー (RAGとは独立した直接生成)
-        subgraph cluster_expansion {
-            label = "Expansion Features (Direct API Call)";
-            style=dashed;
-            color="#666666";
-            fontcolor="#666666";
-            
-            DeepDive [label="💡 Deep Dive\n(Analysis/Map)", shape=component, fillcolor="#fff3cd"];
-            Vision [label="🚀 2035 Vision\n(Card/Diary)", shape=component, fillcolor="#e8daef"];
-        }
-
-        # RAGの接続 (実線)
-        User -> DB [label="Semantic Search"];
-        DB -> AI [label="Context"];
-        User -> AI [label="Query"];
-        AI -> RAG_Out [label="Generation"];
-
-        # 拡張機能の接続 (点線：DBを経由しない独立プロセス)
-        AI -> DeepDive [label="Parallel Gen", style=dotted];
-        AI -> Vision [label="Parallel Gen", style=dotted];
+        edge [fontname="sans-serif"];
+        User [label="USER", shape=ellipse, fillcolor="#e8f0fe"];
+        DB [label="VECTOR DB", color="blue"];
+        AI [label="GEN-AI", color="red"];
+        Output [label="OUTPUT", shape=note, fillcolor="#d4edda"];
+        User -> DB; DB -> AI; User -> AI; AI -> Output;
         
-        # 配置の調整（出力を縦に並べて見やすく）
-        {rank=same; RAG_Out; DeepDive; Vision}
+        subgraph cluster_ext {
+            label = "Expansion";
+            style=dashed;
+            color=gray;
+            DeepDive [label="Deep Dive"];
+            Map [label="Tech Map"];
+            Fun [label="Entertainment"];
+            Output -> DeepDive [style=dotted];
+            Output -> Map [style=dotted];
+            Output -> Fun [style=dotted];
+        }
     }
     """, use_container_width=True)
 
-
     st.markdown("---")
-    # ステート管理
+    
     if "rag_result" not in st.session_state: st.session_state.rag_result = None
     if "last_query" not in st.session_state: st.session_state.last_query = ""
     if "thought_expansion" not in st.session_state: st.session_state.thought_expansion = None
@@ -320,14 +335,21 @@ if app_mode == "💬 AIチャット (RAG)":
 
             if st.session_state.thought_expansion:
                 d = st.session_state.thought_expansion
-                st.markdown(f"#### {d.get('title')}")
-                for i in d.get('items', []): st.write(f"• {i}")
+                st.markdown(f"#### {d.get('title', 'Analysis')}")
+                st.caption("※ AIによるアイデア展開です。")
+                for item in d.get('items', []): st.write(f"• {item}")
 
             # マップ
             st.markdown("")
-            if st.button("🕸️ 技術マップ", key="btn_map", use_container_width=True):
-                dot = generate_tech_hierarchy(st.session_state.last_query)
-                if dot: st.graphviz_chart(dot)
+            if st.button("🕸️ 技術体系マップを表示する", key="btn_map", use_container_width=True):
+                with st.spinner("Mapping..."):
+                    dot = generate_tech_hierarchy(st.session_state.last_query)
+                    if dot:
+                        st.success("✅ マップ生成完了")
+                        st.graphviz_chart(dot)
+                        st.caption("※ AI生成の概念図")
+                    else:
+                        st.error("マップ生成に失敗しました。別のキーワードで試してください。")
 
             # エンタメ
             st.markdown("---")
@@ -342,17 +364,33 @@ if app_mode == "💬 AIチャット (RAG)":
                     st.session_state.future_diary = generate_future_diary(st.session_state.last_query)
                     st.session_state.career_card = None
 
+            # 🚨 名刺レイアウト修正：年収をメトリック表示
             if st.session_state.career_card:
                 c = st.session_state.career_card
-                st.success("✅ Career Prediction")
-                st.markdown(f"### {c.get('job_title')}")
-                st.write(f"**Mission:** {c.get('mission')}")
+                st.success("✅ 2035 Career Prediction")
+                with st.container(border=True):
+                    col_img, col_txt = st.columns([1, 3])
+                    with col_img:
+                        st.image("https://img.icons8.com/fluency/96/future.png", width=80)
+                    with col_txt:
+                        st.markdown(f"### {c.get('job_title', 'Unknown Job')}")
+                        # st.metricを使って年収を強調表示
+                        st.metric(label="想定年収 (2035)", value=c.get('estimated_salary', '---'))
+                    
+                    st.markdown("---")
+                    st.write(f"**Mission:** {c.get('mission', '')}")
+                    st.write("**Required Skills:**")
+                    # スキルをタグ風に
+                    skills = c.get('required_skills', [])
+                    st.write(" ".join([f"`{s}`" for s in skills]))
 
             if st.session_state.future_diary:
                 d = st.session_state.future_diary
-                st.info("✅ 2035 Log")
-                st.markdown(f"### {d.get('title')}")
-                st.write(d.get('content'))
+                st.info("✅ 2035 Daily Log")
+                with st.container(border=True):
+                    st.markdown(f"### 📖 {d.get('title', 'Diary')}")
+                    st.caption(f"📅 {d.get('date', '')} | ✍️ {d.get('author_profile', '')}")
+                    st.write(d.get('content', ''))
         else:
             st.error(result)
 
