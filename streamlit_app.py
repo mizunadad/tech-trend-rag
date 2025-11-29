@@ -256,7 +256,10 @@ selected_categories = [CATEGORY_MAPPING[label] for label in selected_labels]
 
 if app_mode == "💬 AIチャット (RAG)":
     st.title("🧬 NEXT-GEN CAREER BRAIN")
-    st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
+    #st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
+    st.image("tech-trend-rag-family.jpg", caption="Concept: The Future Career Exploring System", use_container_width=True) 
+
+
     st.markdown("---")
     st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
 
