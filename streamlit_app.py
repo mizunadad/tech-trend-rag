@@ -170,8 +170,7 @@ st.sidebar.title("🔧 Control Panel")
 # モード選択
 app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧"])
 
-# ソースフィルター設定 (実際のフォルダ名に合わせてマッピング)
-# gartner_2025, nikkei_bp_2025_2035 は scripts/build_vector_db.py で入れた category 名
+# ソースフィルター設定
 CATEGORY_MAPPING = {
     "Gartner Hype Cycle 2025": "gartner_2025",
     "日経BP 技術トレンド": "nikkei_bp_2025_2035"
@@ -182,9 +181,8 @@ st.sidebar.subheader("🔍 検索対象ソース")
 selected_labels = st.sidebar.multiselect(
     "分析対象を選択",
     options=list(CATEGORY_MAPPING.keys()),
-    default=list(CATEGORY_MAPPING.keys()) # デフォルトは全選択
+    default=list(CATEGORY_MAPPING.keys())
 )
-# 選択されたラベルから実際のカテゴリ名リストに変換
 selected_categories = [CATEGORY_MAPPING[label] for label in selected_labels]
 
 
@@ -197,66 +195,75 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("##### **[ACCESS GRANTED]**。KNOWLEDGE SYSTEM READY FOR QUERY.")
     st.markdown("---")
 
+    # 🚨 修正ポイント1: セッションステートの初期化
+    if "rag_result" not in st.session_state:
+        st.session_state.rag_result = None
+    if "last_query" not in st.session_state:
+        st.session_state.last_query = ""
+
     query = st.text_area("Enter Your Question ...🤣日本語でええよ🤣", height=100)
 
+    # 検索ボタンが押されたら、結果をセッションに保存
     if st.button("🔍 Research Techs ", type="primary", key='rag_search_button'):
         if not selected_categories:
             st.error("⚠️ 検索対象ソースが選択されていません。サイドバーで選択してください。")
         elif query:
-            with st.spinner("Analyzing Data Feeds... Standby for Analysis."):
-                result = run_rag_search(query, selected_categories) # フィルターを渡す
-                
-                if isinstance(result, str):
-                    st.error(result)
-                else:
-                    st.markdown(f"**💡 回答**\n\n{result['answer']}")
-                    st.markdown("---")
-                    st.markdown(f"**📚 参照された資料:** {', '.join(result['sources'])}") 
-                    
-                    with st.expander("📄 参照された原文コンテンツを確認する"):
-                        st.code(result['context'], language="markdown")
-                    # 🚨 === ここから追加：未来の名刺機能 === 🚨
-                    st.markdown("---")
-                    st.markdown("### 🔮 Future Career Analysis")
-                    if st.button("🃏 この技術で「2035年の未来の名刺」を作る", key="future_card_btn"):
-                        with st.spinner("Generating Future Profile..."):
-                            card_data = generate_future_career(query)
-
-                            if card_data:
-                                # 名刺風のデザイン表示
-                                st.success("✅ 2035年のキャリア予測が完了しました")
-
-                                # カラムを使ってレイアウト
-                                col1, col2 = st.columns([1, 2])
-
-                                with col1:
-                                    st.image("https://img.icons8.com/fluency/96/future.png", width=80) # 未来っぽいアイコン
-                                    st.metric(label="想定年収 (2035)", value=card_data['estimated_salary'])
-
-                                with col2:
-                                    st.subheader(card_data['job_title'])
-                                    st.write(f"**Mission:** {card_data['mission']}")
-                                    st.write("**Required Skills:**")
-                                    # スキルをタグ風に表示
-                                    st.write(" ".join([f"`{skill}`" for skill in card_data['required_skills']]))
-                            else:
-                                st.error("未来の予測に失敗しました。もう一度試してください。")
+            with st.spinner("Analyzing 700 Data Feeds... Standby for Analysis."):
+                # 検索実行
+                result = run_rag_search(query, selected_categories)
+                # 結果とクエリを保存（これでボタンがリセットされても消えない）
+                st.session_state.rag_result = result
+                st.session_state.last_query = query
         else:
             st.error("質問を入力してください。")
 
+    # 🚨 修正ポイント2: 保存された結果があれば表示（検索ボタンの外に出す）
+    if st.session_state.rag_result:
+        result = st.session_state.rag_result
+
+        if isinstance(result, str):
+            st.error(result)
+        else:
+            st.markdown(f"**💡 回答**\n\n{result['answer']}")
+            st.markdown("---")
+            st.markdown(f"**📚 参照された資料:** {', '.join(result['sources'])}")
+
+            with st.expander("📄 参照された原文コンテンツを確認する"):
+                st.code(result['context'], language="markdown")
+
+            # === 未来の名刺機能 ===
+            st.markdown("---")
+            st.markdown("### 🔮 Future Career Analysis")
+
+            # 以前保存したクエリを使って名刺生成
+            if st.button("🃏 この技術で「2035年の未来の名刺」を作る", key="future_card_btn"):
+                with st.spinner("Generating Future Profile..."):
+                    # 保存しておいたクエリを使用
+                    card_data = generate_future_career(st.session_state.last_query)
+
+                    if card_data:
+                        st.success("✅ 2035年のキャリア予測が完了しました")
+                        col1, col2 = st.columns([1, 2])
+                        with col1:
+                            st.image("https://img.icons8.com/fluency/96/future.png", width=80)
+                            st.metric(label="想定年収 (2035)", value=card_data.get('estimated_salary', 'N/A'))
+                        with col2:
+                            st.subheader(card_data.get('job_title', 'Future Creator'))
+                            st.write(f"**Mission:** {card_data.get('mission', '')}")
+                            st.write("**Required Skills:**")
+                            skills = card_data.get('required_skills', [])
+                            st.write(" ".join([f"`{skill}`" for skill in skills]))
+                    else:
+                        st.error("未来の予測に失敗しました。もう一度試してください。")
+
 elif app_mode == "📚 データカタログ一覧":
     st.title("📚 Data Catalog")
+    # ... (カタログ表示ロジックはそのまま) ...
+    # もし以前のコードからコピペが必要なら指示ください
     st.markdown("現在データベースに格納されている全技術レポートの一覧です。")
-    
-    # データ取得
     df = get_all_data_as_df()
-    
-    # フィルタリング (サイドバーの選択に連動)
     df_filtered = df[df['Category'].isin(selected_categories)]
-    
     st.info(f"全データ数: {len(df)} 件 / 表示中: {len(df_filtered)} 件")
-    
-    # データフレーム表示 (検索・ソート可能)
     st.dataframe(
         df_filtered,
         use_container_width=True,
@@ -271,4 +278,5 @@ elif app_mode == "📚 データカタログ一覧":
 st.sidebar.markdown("---")
 if st.sidebar.button("ログアウト", key='logout_button_sidebar'):
     st.session_state["password_correct"] = False
+    st.session_state.rag_result = None # ログアウト時に結果もクリア
     st.rerun()
