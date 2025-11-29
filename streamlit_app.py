@@ -107,7 +107,7 @@ def call_claude_json(prompt):
         e_idx = content.rfind("}")
         if s_idx != -1 and e_idx != -1:
             json_str = content[s_idx:e_idx+1]
-            return json.loads(json_str)
+            return json.loads(json_str, strict=False)
         else:
             return None
     except Exception as e:
