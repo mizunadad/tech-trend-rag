@@ -8,6 +8,7 @@ import anthropic
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
+import base64
 
 # --- 1. Firestore接続のためのユーティリティ関数 ---
 @st.cache_resource
@@ -22,7 +23,13 @@ def setup_firestore():
             st.error(f"Firestore接続エラー: {e}")
             return None
     return firestore.client()
-
+# --- Mermaid図を画像として表示する関数 ---
+def render_mermaid(graph_code):
+    graphbytes = graph_code.encode("utf8")
+    base64_bytes = base64.urlsafe_b64encode(graphbytes)
+    base64_string = base64_bytes.decode("ascii")
+    url = f"https://mermaid.ink/img/{base64_string}"
+    st.image(url, use_container_width=True)
 # --- 2. RAG検索ロジック ---
 @st.cache_resource
 def load_embedding_model():
@@ -258,40 +265,42 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("---")
 
     # 🚨 修正: with st.expander(...) を削除し、直接表示します
+   # 3. システムフロー図の表示 (Mermaid画像版)
     st.markdown("#### 🔌 System Architecture")
     
-    st.graphviz_chart("""
-    digraph RAG {
-        rankdir=LR;
-        # シンプルな設定に戻して安定性を確保
-        node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="sans-serif"];
-        edge [fontname="sans-serif"];
+    render_mermaid("""
+    graph LR
+        %% ノード定義
+        User(("👨‍💻 USER<br>(Query)"))
+        DB[("📚 VECTOR DB<br>(700 Tech Reports)")]
+        AI[["🧠 GENERATIVE AI<br>(Claude 3 Haiku)"]]
+        Output> "🚀 OUTPUT<br>(Future Roadmap)"]
 
-        User [label="USER", shape=ellipse, fillcolor="#e8f0fe"];
-        DB [label="VECTOR DB\n(700 Reports)", color="blue"];
-        AI [label="GEN-AI\n(Claude 3 Haiku)", color="red"];
-        Output [label="OUTPUT", shape=note, fillcolor="#d4edda"];
+        %% フロー定義
+        User -->|"Semantic Search"| DB
+        DB -->|"Retrieval"| AI
+        User -->|"Context"| AI
+        AI -->|"Generation"| Output
 
-        User -> DB [label="Search"];
-        DB -> AI [label="Context"];
-        User -> AI [label="Query"];
-        AI -> Output [label="Answer"];
+        %% 拡張機能エリア
+        subgraph Ext [Expansion Features]
+            direction TB
+            Expand("💡 Deep Dive")
+            Map("🕸️ Tech Map")
+            Fun("🔮 Entertainment")
+        end
         
-        # 拡張機能の表示
-        subgraph cluster_ext {
-            label = "Expansion";
-            style=dashed;
-            color=gray;
-            DeepDive [label="Deep Dive"];
-            Map [label="Tech Map"];
-            Fun [label="Entertainment"];
-            
-            Output -> DeepDive [style=dotted];
-            Output -> Map [style=dotted];
-            Output -> Fun [style=dotted];
-        }
-    }
-    """, use_container_width=True)
+        Output -.-> Expand
+        Output -.-> Map
+        Output -.-> Fun
+
+        %% スタイル定義
+        style User fill:#e8f0fe,stroke:#333,stroke-width:2px
+        style DB fill:#e6f3ff,stroke:#00f,stroke-width:2px
+        style AI fill:#ffebee,stroke:#f00,stroke-width:2px
+        style Output fill:#d4edda,stroke:#333,stroke-width:2px
+        style Ext fill:#fff,stroke:#999,stroke-dasharray: 5 5
+    """) 
 
     st.markdown("---")
 
