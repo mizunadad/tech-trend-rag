@@ -277,4 +277,145 @@ if app_mode == "💬 AIチャット (RAG)":
             AI -> Output [label="Generation"];
             
             # 拡張機能フロー
-            subgraph cluster_ext
+            subgraph cluster_ext {
+                label = "Expansion Features";
+                style=dashed;
+                Expand [label="💡 Deep Dive\n(Abstract/Concrete)", color="orange"];
+                Map [label="🕸️ Tech Map", color="green"];
+                Fun [label="🔮 Entertainment\n(Card/Diary)", color="purple"];
+                
+                Output -> Expand [style=dotted];
+                Output -> Map [style=dotted];
+                Output -> Fun [style=dotted];
+            }
+        }
+        """)
+    st.markdown("---")
+
+    # ステート初期化
+    if "rag_result" not in st.session_state: st.session_state.rag_result = None
+    if "last_query" not in st.session_state: st.session_state.last_query = ""
+    if "thought_expansion" not in st.session_state: st.session_state.thought_expansion = None
+    if "career_card" not in st.session_state: st.session_state.career_card = None
+    if "future_diary" not in st.session_state: st.session_state.future_diary = None
+
+    query = st.text_area("Enter Your Question ...🤣日本語でええよ🤣", height=100)
+
+    if st.button("🔍 Research Techs ", type="primary", key='rag_search_button'):
+        if not selected_categories:
+            st.error("⚠️ 検索対象ソースが選択されていません。")
+        elif query:
+            # 検索時は他の結果をリセット
+            st.session_state.thought_expansion = None
+            st.session_state.career_card = None
+            st.session_state.future_diary = None
+            
+            with st.spinner("Analyzing 700 Data Feeds... Standby for Analysis."):
+                result = run_rag_search(query, selected_categories)
+                st.session_state.rag_result = result
+                st.session_state.last_query = query
+        else:
+            st.error("質問を入力してください。")
+
+    # --- 結果表示エリア ---
+    if st.session_state.rag_result:
+        result = st.session_state.rag_result
+        
+        if isinstance(result, str):
+            st.error(result)
+        else:
+            # RAG回答
+            st.markdown(f"**💡 回答**\n\n{result['answer']}")
+            st.markdown("---")
+            st.markdown(f"**📚 参照された資料:** {', '.join(result['sources'])}") 
+            
+            with st.expander("📄 参照された原文コンテンツを確認する"):
+                st.code(result['context'], language="markdown")
+
+            # === 思考の深掘り機能エリア ===
+            st.markdown("---")
+            st.subheader("💡 Deep Dive & Expansion")
+            
+            c_d1, c_d2, c_d3 = st.columns(3)
+            with c_d1:
+                if st.button("⬆️ 抽象化 (上位概念)", key="btn_abstract", use_container_width=True):
+                    with st.spinner("Thinking Macro..."):
+                        st.session_state.thought_expansion = generate_thought_expansion(st.session_state.last_query, "abstract")
+            with c_d2:
+                if st.button("⬇️ 具体化 (応用例)", key="btn_concrete", use_container_width=True):
+                    with st.spinner("Thinking Micro..."):
+                        st.session_state.thought_expansion = generate_thought_expansion(st.session_state.last_query, "concrete")
+            with c_d3:
+                if st.button("↔️ 横展開 (関連技術)", key="btn_analogous", use_container_width=True):
+                    with st.spinner("Connecting Dots..."):
+                        st.session_state.thought_expansion = generate_thought_expansion(st.session_state.last_query, "analogous")
+
+            if st.session_state.thought_expansion:
+                data = st.session_state.thought_expansion
+                st.markdown(f"#### {data.get('title', 'Analysis')}")
+                st.caption("※ AIによるアイデア展開です。")
+                for item in data.get('items', []):
+                    st.write(f"• {item}")
+
+            # === 技術マップ ===
+            st.markdown("")
+            if st.button("🕸️ 技術体系マップを表示する", key="btn_map", use_container_width=True):
+                with st.spinner("Mapping..."):
+                    dot = generate_tech_hierarchy(st.session_state.last_query)
+                    if dot:
+                        st.graphviz_chart(dot)
+                        st.caption("※ AI生成の概念図")
+
+            # === エンタメ機能エリア ===
+            st.markdown("---")
+            st.subheader("🚀 2035 Vision Simulation")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🃏 未来の名刺を作る", key="btn_card", use_container_width=True):
+                    with st.spinner("Designing..."):
+                        st.session_state.career_card = generate_future_career(st.session_state.last_query)
+                        st.session_state.future_diary = None
+            with col2:
+                if st.button("📖 未来の日記を読む", key="btn_diary", use_container_width=True):
+                    with st.spinner("Writing..."):
+                        st.session_state.future_diary = generate_future_diary(st.session_state.last_query)
+                        st.session_state.career_card = None
+
+            if st.session_state.career_card:
+                card = st.session_state.career_card
+                st.success("✅ 2035 Career Prediction")
+                with st.container(border=True):
+                    c1, c2 = st.columns([1, 3])
+                    with c1: st.image("https://img.icons8.com/fluency/96/future.png", width=70)
+                    with c2:
+                        st.markdown(f"### {card.get('job_title', 'Future Job')}")
+                        st.caption(f"推定年収: {card.get('estimated_salary', '---')}")
+                    st.write(f"**Mission:** {card.get('mission', '')}")
+                    st.write(f"**Skills:** {', '.join(card.get('required_skills', []))}")
+
+            if st.session_state.future_diary:
+                diary = st.session_state.future_diary
+                st.info("✅ 2035 Daily Log")
+                with st.container(border=True):
+                    st.markdown(f"### 📖 {diary.get('title', 'Diary')}")
+                    st.caption(f"📅 {diary.get('date', '')} | ✍️ {diary.get('author_profile', '')}")
+                    st.write(diary.get('content', ''))
+
+elif app_mode == "📚 データカタログ一覧":
+    st.title("📚 Data Catalog")
+    st.markdown("現在データベースに格納されている全技術レポートの一覧です。")
+    df = get_all_data_as_df()
+    if not df.empty:
+        df_filtered = df[df['Category'].isin(selected_categories)]
+        st.info(f"全データ数: {len(df)} 件 / 表示中: {len(df_filtered)} 件")
+        st.dataframe(df_filtered, use_container_width=True, hide_index=True)
+    else:
+        st.warning("データが見つかりません。")
+
+# --- ログアウト ---
+st.sidebar.markdown("---")
+if st.sidebar.button("ログアウト", key='logout_button_sidebar'):
+    st.session_state["password_correct"] = False
+    st.session_state.rag_result = None
+    st.rerun()
