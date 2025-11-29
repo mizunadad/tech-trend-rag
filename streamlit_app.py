@@ -257,14 +257,19 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
     st.markdown("---")
     st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
-    
-    # --- システムフロー図 (修正版) ---
+    # --- システムフロー図 (文字サイズ修正版) ---
     with st.expander("🔌 System Architecture (View Flow)"):
         st.graphviz_chart("""
         digraph RAG {
             rankdir=LR;
-            node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="Helvetica", fontsize=10];
-            edge [fontname="Helvetica", fontsize=8];
+            # 🚨 修正: 全体の解像度とフォント設定
+            graph [dpi=300]; 
+            
+            # 🚨 修正: 文字サイズを大きく (10->14)
+            node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="Helvetica", fontsize=14, penwidth=2.0];
+            
+            # 🚨 修正: 矢印の文字サイズも大きく (8->12)
+            edge [fontname="Helvetica", fontsize=12];
     
             User [label="👨‍💻 USER\n(Query)", shape=ellipse, fillcolor="#e8f0fe"];
             DB [label="📚 VECTOR DB\n(700 Tech Reports)", color="blue"];
@@ -279,6 +284,7 @@ if app_mode == "💬 AIチャット (RAG)":
             # 拡張機能フロー
             subgraph cluster_ext {
                 label = "Expansion Features";
+                fontsize = 12; # サブグラフのラベルも大きく
                 style=dashed;
                 Expand [label="💡 Deep Dive\n(Abstract/Concrete)", color="orange"];
                 Map [label="🕸️ Tech Map", color="green"];
@@ -289,7 +295,9 @@ if app_mode == "💬 AIチャット (RAG)":
                 Output -> Fun [style=dotted];
             }
         }
-        """)
+        """, use_container_width=True) # コンテナ幅に合わせて最大化    
+
+
     st.markdown("---")
 
     # ステート初期化
