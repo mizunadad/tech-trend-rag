@@ -4,3 +4,4 @@ numpy
 firebase-admin
 sentence-transformers
 anthropic
+graphviz
