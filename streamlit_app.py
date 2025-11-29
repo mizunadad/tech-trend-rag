@@ -296,7 +296,17 @@ if app_mode == "💬 AIチャット (RAG)":
     if "future_diary" not in st.session_state: st.session_state.future_diary = None
 
     query = st.text_area("Enter Your Question ...🤣日本語でええよ🤣", height=100)
-
+    # 🚨 追加箇所: プロンプト入力のコツを伝えるガイド
+    with st.expander("💡 ヒント：AIの性能を最大限に引き出す入力のコツ"):
+        st.markdown("""
+        **1. RAG検索（回答）の精度を上げたいとき**
+        * **具体的に書く**: 単に「AI」だけでなく、「化学プラントにおけるAIの活用事例」のように書くと、関連資料がヒットしやすくなります。
+        * **背景を伝える**: 「私は〇〇を専攻しています。××の視点で教えて」と書くと、AIが文脈を理解して回答を調整してくれます。
+        
+        **2. 技術マップを綺麗に出したいとき**
+        * **要素を詰め込みすぎない**: 「水泳と化学と宇宙と料理」のように多すぎると、一直線の単純な図になりがちです。「水泳×センシング技術」のように**2つの掛け合わせ**に絞ると、深いツリーが生成されやすくなります。
+        * **関係性を問う**: 「〇〇を実現するための技術構成要素を教えて」のような聞き方をすると、綺麗な階層構造になりやすいです。
+        """)
     if st.button("🔍 Research Techs ", type="primary", key='rag_search_button'):
         if not selected_categories:
             st.error("⚠️ 検索対象ソースが選択されていません。")
