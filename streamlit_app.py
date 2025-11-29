@@ -152,6 +152,44 @@ def generate_future_diary(topic):
     except Exception as e:
         return None
 
+# --- 新機能: 思考の深掘り（展開）ロジック ---
+def generate_thought_expansion(topic, mode):
+    client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
+
+    # モードに応じたプロンプトの切り替え
+    if mode == "abstract":
+        instruction = "Identify the superordinate concepts, macro trends, and 'Why it matters' for this technology."
+        json_structure = '{"title": "Upper Concepts & Trends", "items": ["Concept 1", "Concept 2", "Why it matters"]}'
+    elif mode == "concrete":
+        instruction = "List specific applications, products, or industries where this technology is applied in 2030."
+        json_structure = '{"title": "Specific Applications (2030)", "items": ["App 1", "App 2", "App 3"]}'
+    elif mode == "analogous":
+        instruction = "Suggest unexpected combinations with other fields, or analogous technologies. Cross-industry innovation ideas."
+        json_structure = '{"title": "Cross-Pollination Ideas", "items": ["Idea 1", "Idea 2", "Idea 3"]}'
+
+    prompt = f"""
+    You are a technology strategist. Analyze the topic: '{topic}'.
+    {instruction}
+
+    Output format (JSON):
+    {json_structure}
+
+    Ensure the content is in Japanese, but the JSON keys remain in English. Only output the JSON.
+    """
+
+    try:
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        import json
+        content = response.content[0].text
+        json_str = content[content.find("{"):content.rfind("}")+1]
+        return json.loads(json_str)
+    except Exception as e:
+        return None
+
 # --- 3. データ全件取得関数 (カタログ用) ---
 @st.cache_data(ttl=600) # 10分間キャッシュ
 def get_all_data_as_df():
@@ -263,7 +301,40 @@ if app_mode == "💬 AIチャット (RAG)":
             
             with st.expander("📄 参照された原文コンテンツを確認する"):
                 st.code(result['context'], language="markdown")
+            # === 思考の深掘り機能エリア ===
+            st.markdown("---")
+            st.subheader("💡 Deep Dive & Expansion")
+            st.markdown("視点を変えて、この技術を深掘りします。")
             
+            # ステート初期化
+            if "thought_expansion" not in st.session_state:
+                st.session_state.thought_expansion = None
+            
+            # 3つのボタンを横並びに
+            col_d1, col_d2, col_d3 = st.columns(3)
+            
+            with col_d1:
+                if st.button("⬆️ 抽象化 (上位概念)", key="btn_abstract", use_container_width=True):
+                    with st.spinner("Thinking Macro..."):
+                        st.session_state.thought_expansion = generate_thought_expansion(st.session_state.last_query, "abstract")
+            
+            with col_d2:
+                if st.button("⬇️ 具体化 (応用例)", key="btn_concrete", use_container_width=True):
+                    with st.spinner("Thinking Micro..."):
+                        st.session_state.thought_expansion = generate_thought_expansion(st.session_state.last_query, "concrete")
+            
+            with col_d3:
+                if st.button("↔️ 横展開 (関連技術)", key="btn_analogous", use_container_width=True):
+                    with st.spinner("Connecting Dots..."):
+                        st.session_state.thought_expansion = generate_thought_expansion(st.session_state.last_query, "analogous")
+
+            # 深掘り結果の表示
+            if st.session_state.thought_expansion:
+                data = st.session_state.thought_expansion
+                st.info(f"**{data.get('title', 'Analysis Result')}**")
+                for item in data.get('items', []):
+                    st.write(f"• {item}")
+
             # === エンタメ機能エリア ===
             st.markdown("---")
             st.subheader("🚀 2035 Vision Simulation")
