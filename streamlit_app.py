@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components # 👈 追加
 import os 
 import json
 import firebase_admin
@@ -22,6 +23,22 @@ def setup_firestore():
             st.error(f"Firestore接続エラー: {e}")
             return None
     return firestore.client()
+
+# --- Mermaid図の描画関数 ---
+def st_mermaid(code: str, height=400):
+    components.html(
+        f"""
+        <pre class="mermaid">
+            {code}
+        </pre>
+        <script type="module">
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+            mermaid.initialize({{ startOnLoad: true }});
+        </script>
+        """,
+        height=height,
+        scrolling=True
+    )
 
 # --- 2. RAG検索ロジック ---
 @st.cache_resource
@@ -257,43 +274,43 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
     st.markdown("---")
     st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
-    # --- システムフロー図 (修正版: 安全なフォント設定) ---
+    # --- システムフロー図 (Mermaid版: 確実な表示) ---
     with st.expander("🔌 System Architecture (View Flow)"):
-        st.graphviz_chart("""
-        digraph RAG {
-            rankdir=LR;
-            # 🚨 修正: dpi設定を削除し、Web標準に任せる
+        st_mermaid("""
+        graph LR
+            %% ノードの定義
+            User(("👨‍💻 USER<br>(Query)"))
+            DB[("📚 VECTOR DB<br>(700 Tech Reports)")]
+            AI[["🧠 GENERATIVE AI<br>(Claude 3 Haiku)"]]
+            Output> "🚀 OUTPUT<br>(Future Roadmap)"]
+
+            %% スタイル定義
+            style User fill:#e8f0fe,stroke:#333,stroke-width:2px
+            style DB fill:#e6f3ff,stroke:#00f,stroke-width:2px
+            style AI fill:#ffebee,stroke:#f00,stroke-width:2px
+            style Output fill:#d4edda,stroke:#333,stroke-width:2px
+
+            %% フロー定義
+            User -->|"Semantic Search"| DB
+            DB -->|"Retrieval"| AI
+            User -->|"Context"| AI
+            AI -->|"Generation"| Output
+
+            %% 拡張機能（サブグラフ）
+            subgraph Ext [Expansion Features]
+                direction TB
+                Expand("💡 Deep Dive")
+                Map("🕸️ Tech Map")
+                Fun("🔮 Entertainment")
+            end
             
-            # 🚨 修正: フォントを 'sans-serif' (標準ゴシック) に変更して文字化け/エラー回避
-            node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="sans-serif", fontsize=14, penwidth=2.0];
-            edge [fontname="sans-serif", fontsize=12];
-    
-            User [label="👨‍💻 USER\n(Query)", shape=ellipse, fillcolor="#e8f0fe"];
-            DB [label="📚 VECTOR DB\n(700 Tech Reports)", color="blue"];
-            AI [label="🧠 GENERATIVE AI\n(Claude 3 Haiku)", color="red", shape=component];
-            Output [label="🚀 OUTPUT\n(Future Roadmap)", shape=note, fillcolor="#d4edda"];
-    
-            User -> DB [label="Semantic Search"];
-            DB -> AI [label="Retrieval"];
-            User -> AI [label="Context"];
-            AI -> Output [label="Generation"];
+            Output -.-> Expand
+            Output -.-> Map
+            Output -.-> Fun
             
-            # 拡張機能フロー
-            subgraph cluster_ext {
-                label = "Expansion Features";
-                fontname = "sans-serif"; # ここも修正
-                fontsize = 12;
-                style=dashed;
-                Expand [label="💡 Deep Dive\n(Abstract/Concrete)", color="orange"];
-                Map [label="🕸️ Tech Map", color="green"];
-                Fun [label="🔮 Entertainment\n(Card/Diary)", color="purple"];
-                
-                Output -> Expand [style=dotted];
-                Output -> Map [style=dotted];
-                Output -> Fun [style=dotted];
-            }
-        }
-        """, use_container_width=True)
+            %% サブグラフのスタイル
+            style Ext fill:#fff,stroke:#999,stroke-dasharray: 5 5
+        """, height=350)
 
     st.markdown("---")
 
