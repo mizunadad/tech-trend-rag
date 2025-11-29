@@ -6,35 +6,42 @@ from firebase_admin import credentials, firestore
 from sentence_transformers import SentenceTransformer
 import anthropic
 import numpy as np
-import pandas as pd # 👈 データ表示用にpandasを追加
+import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
 # --- 1. Firestore接続のためのユーティリティ関数 ---
 @st.cache_resource
 def setup_firestore():
     if not firebase_admin._apps:
-        cert_json_string = st.secrets["firebase"]["cert_json"] 
-        cert_dict = json.loads(cert_json_string) 
-        cred = credentials.Certificate(cert_dict)
-        firebase_admin.initialize_app(cred)
+        try:
+            cert_json_string = st.secrets["firebase"]["cert_json"] 
+            cert_dict = json.loads(cert_json_string) 
+            cred = credentials.Certificate(cert_dict)
+            firebase_admin.initialize_app(cred)
+        except Exception as e:
+            st.error(f"Firestore接続エラー: {e}")
+            return None
     return firestore.client()
 
-# --- 2. RAG検索ロジック (フィルター機能付き) ---
+# --- 2. RAG検索ロジック ---
 @st.cache_resource
 def load_embedding_model():
     return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
 def run_rag_search(query, selected_categories):
     db = setup_firestore()
+    if not db: return "データベース接続に失敗しました。"
+    
     model = load_embedding_model()
     
     try:
         query_embedding = model.encode(query)
         
-        # 全ドキュメント取得
-        # NOTE: データ量が増えた場合は、ここでFirestoreクエリによる事前フィルタリングを検討します
         all_docs = []
-        for doc in db.collection("tech_docs").stream():
+        # tech_docsコレクションからデータを取得
+        docs_stream = db.collection("tech_docs").stream()
+        
+        for doc in docs_stream:
             data = doc.to_dict()
             data['doc_id'] = doc.id
             # カテゴリフィルタリング
@@ -85,158 +92,119 @@ def run_rag_search(query, selected_categories):
     except Exception as e:
         return f"❌ RAG検索失敗: サーバー内部エラーが発生しました ({e})"
 
-
-# --- 新機能: 未来の名刺生成ロジック ---
-def generate_future_career(topic):
+# --- 生成AI共通関数 (JSONパース強化版) ---
+def call_claude_json(prompt):
     client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
-    
+    try:
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        content = response.content[0].text
+        # JSON部分抽出
+        s_idx = content.find("{")
+        e_idx = content.rfind("}")
+        if s_idx != -1 and e_idx != -1:
+            json_str = content[s_idx:e_idx+1]
+            return json.loads(json_str)
+        else:
+            return None
+    except Exception as e:
+        st.error(f"AI生成エラー: {e}")
+        return None
+
+# --- 新機能: 未来の名刺 ---
+def generate_future_career(topic):
     prompt = f"""
     You are a visionary career consultant in the year 2035.
     Based on the technology topic: '{topic}', create a fictional, futuristic job profile.
-    
     Output format (JSON):
     {{
         "job_title": "Cool sounding job title (English & Japanese)",
         "estimated_salary": "Annual salary in 2035 (JPY)",
         "required_skills": ["Skill 1", "Skill 2", "Skill 3"],
-        "mission": "A short, inspiring mission statement for this job."
+        "mission": "A short, inspiring mission statement."
     }}
     Only output the JSON.
     """
-    
-    try:
-        response = client.messages.create(
-            model="claude-3-haiku-20240307",
-            max_tokens=500,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        # JSON部分だけを抽出してパースする簡易処理
-        import json
-        content = response.content[0].text
-        # 簡易的にJSON部分を探す（{から}まで）
-        json_str = content[content.find("{"):content.rfind("}")+1]
-        return json.loads(json_str)
-    except Exception as e:
-        return None
+    return call_claude_json(prompt)
 
-# --- 新機能: 未来日記生成ロジック ---
+# --- 新機能: 未来日記 ---
 def generate_future_diary(topic):
-    client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
-    
     prompt = f"""
     You are a novelist writing a 'slice of life' diary entry set in the year 2035.
     The theme is: '{topic}' is now a normal part of everyday life in Japan.
-    Write a short, emotional, or funny diary entry (about 300 Japanese characters) from the perspective of an ordinary person (a student, a parent, or a worker).
-    Focus on how this technology has changed feelings, scenery, or daily routine.
-    
     Output format (JSON):
     {{
         "date": "2035年X月X日 (Weather)",
         "title": "Catchy Title",
         "author_profile": "Example: '14歳 中学生' or '45歳 主婦'",
-        "content": "Diary content..."
+        "content": "Diary content (about 300 Japanese characters)..."
     }}
     Only output the JSON.
     """
-    
-    try:
-        response = client.messages.create(
-            model="claude-3-haiku-20240307",
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        import json
-        content = response.content[0].text
-        json_str = content[content.find("{"):content.rfind("}")+1]
-        return json.loads(json_str)
-    except Exception as e:
-        return None
+    return call_claude_json(prompt)
 
-# --- 新機能: 思考の深掘り（展開）ロジック ---
+# --- 新機能: 思考の深掘り ---
 def generate_thought_expansion(topic, mode):
-    client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
-
-    # モードに応じたプロンプトの切り替え
-    if mode == "abstract":
-        instruction = "Identify the superordinate concepts, macro trends, and 'Why it matters' for this technology."
-        json_structure = '{"title": "Upper Concepts & Trends", "items": ["Concept 1", "Concept 2", "Why it matters"]}'
-    elif mode == "concrete":
-        instruction = "List specific applications, products, or industries where this technology is applied in 2030."
-        json_structure = '{"title": "Specific Applications (2030)", "items": ["App 1", "App 2", "App 3"]}'
-    elif mode == "analogous":
-        instruction = "Suggest unexpected combinations with other fields, or analogous technologies. Cross-industry innovation ideas."
-        json_structure = '{"title": "Cross-Pollination Ideas", "items": ["Idea 1", "Idea 2", "Idea 3"]}'
-
+    instructions = {
+        "abstract": "Identify superordinate concepts, macro trends, and 'Why it matters'.",
+        "concrete": "List specific applications, products, or industries in 2030.",
+        "analogous": "Suggest unexpected combinations or analogous technologies."
+    }
+    titles = {
+        "abstract": "Upper Concepts & Trends",
+        "concrete": "Specific Applications (2030)",
+        "analogous": "Cross-Pollination Ideas"
+    }
+    
     prompt = f"""
-    You are a technology strategist. Analyze the topic: '{topic}'.
-    {instruction}
-
+    You are a technology strategist. Analyze: '{topic}'.
+    {instructions.get(mode, "")}
     Output format (JSON):
-    {json_structure}
-
-    Ensure the content is in Japanese, but the JSON keys remain in English. Only output the JSON.
+    {{
+        "title": "{titles.get(mode, 'Analysis')}",
+        "items": ["Item 1", "Item 2", "Item 3", "Item 4", "Item 5"]
+    }}
+    Ensure content is in Japanese. Only output the JSON.
     """
+    return call_claude_json(prompt)
 
-    try:
-        response = client.messages.create(
-            model="claude-3-haiku-20240307",
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        import json
-        content = response.content[0].text
-        json_str = content[content.find("{"):content.rfind("}")+1]
-        return json.loads(json_str)
-    except Exception as e:
-        return None
-
-# --- 新機能: 技術階層マップ生成ロジック ---
+# --- 新機能: 技術階層マップ ---
 def generate_tech_hierarchy(topic):
     client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
-    
     prompt = f"""
-    You are a technology taxonomist. Create a hierarchical map for the topic: '{topic}'.
-    Identify:
-    1. Parent category (Broader field)
-    2. The topic itself (Central node)
-    3. Child technologies (Components/Sub-fields)
-    4. Related technologies (Siblings)
-
-    Output format:
-    Generate ONLY a valid Graphviz DOT language code.
+    You are a technology taxonomist. Create a hierarchical map for: '{topic}'.
+    Output ONLY valid Graphviz DOT code.
     - Use 'digraph G'
-    - Use rectangular nodes for clarity.
-    - Do not include any markdown backticks (```) or explanation. Just the code.
-    - Labels must be in Japanese.
+    - Use rectangular nodes.
+    - No markdown backticks.
+    - Labels in Japanese.
     """
-    
     try:
         response = client.messages.create(
             model="claude-3-haiku-20240307",
             max_tokens=1000,
             messages=[{"role": "user", "content": prompt}]
         )
-        # 余計な文字列が含まれていたら除去（簡易処理）
         dot_code = response.content[0].text
-        if "```" in dot_code:
-            dot_code = dot_code.replace("```graphviz", "").replace("```", "")
-        return dot_code.strip()
-    except Exception as e:
+        return dot_code.replace("```graphviz", "").replace("```", "").strip()
+    except:
         return None
 
-
-# --- 3. データ全件取得関数 (カタログ用) ---
-@st.cache_data(ttl=600) # 10分間キャッシュ
+# --- 3. データ全件取得関数 ---
+@st.cache_data(ttl=600)
 def get_all_data_as_df():
     db = setup_firestore()
+    if not db: return pd.DataFrame()
+    
     docs_list = []
     for doc in db.collection("tech_docs").stream():
         d = doc.to_dict()
-        # 表示に必要な項目だけ抽出
         docs_list.append({
             "Title": d.get('title', ''),
-            "Category": d.get('category', ''),
-            # "Content": d.get('content', '')[:100] + "..." # コンテンツ冒頭
+            "Category": d.get('category', '')
         })
     return pd.DataFrame(docs_list)
 
@@ -257,25 +225,19 @@ if not st.session_state["password_correct"]:
     with st.form("login_form"):
         st.text_input("パスワード", type="password", key="password_input")
         submitted = st.form_submit_button("Login")
-
         if submitted:
             if check_password():
                 st.session_state["password_correct"] = True
                 st.rerun() 
             else:
                 st.error('パスワードが間違っています。')
-            
     st.stop() 
 
-# --- 5. メインアプリ画面 (サイドバー付) ---
+# --- 5. メインアプリ画面 ---
 
-# サイドバー設定
 st.sidebar.title("🔧 Control Panel")
-
-# モード選択
 app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧"])
 
-# ソースフィルター設定
 CATEGORY_MAPPING = {
     "Gartner Hype Cycle 2025": "gartner_2025",
     "日経BP 技術トレンド": "nikkei_bp_2025_2035"
@@ -290,204 +252,29 @@ selected_labels = st.sidebar.multiselect(
 )
 selected_categories = [CATEGORY_MAPPING[label] for label in selected_labels]
 
-
-# --- 画面分岐 ---
-
 if app_mode == "💬 AIチャット (RAG)":
-    # 1. タイトルとメッセージ（既存）
     st.title("🧬 NEXT-GEN CAREER BRAIN")
     st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
     st.markdown("---")
-    st.markdown("##### **[ACCESS GRANTED]**   KNOWLEDGE SYSTEM READY FOR QUERY.")
-    st.markdown("---")
-
-    # 2. セッションステートの初期化（🚨 ここは消さずに残す！）
-    if "rag_result" not in st.session_state:
-        st.session_state.rag_result = None
-    if "last_query" not in st.session_state:
-        st.session_state.last_query = ""
-
-    # 3. システムフロー図の表示
-    st.graphviz_chart("""
-    digraph RAG {
-        rankdir=LR;
-        node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="Helvetica", fontsize=10];
-        edge [fontname="Helvetica", fontsize=8];
-
-        User [label="👨‍💻 USER\n(Query)", shape=ellipse, fillcolor="#e8f0fe"];
-        DB [label="📚 VECTOR DB\n(700 Tech Reports)", color="blue"];
-        AI [label="🧠 GENERATIVE AI\n(Claude 3.5 Sonnet)", color="red", shape=component];
-        Output [label="🚀 OUTPUT\n(Future Roadmap)", shape=note, fillcolor="#d4edda"];
-
-        User -> DB [label="Semantic Search"];
-        DB -> AI [label="Retrieval"];
-        User -> AI [label="Context"];
-        AI -> Output [label="Generation"];
-    }
-    """)
-
-    st.write("")
-
-    # 4.質問入力欄
-    query = st.text_area("Enter Your Question ...🤣日本語でええよ🤣", height=100)
-
-    # 検索ボタンが押されたら、結果をセッションに保存
-    if st.button("🔍 Research Techs ", type="primary", key='rag_search_button'):
-        if not selected_categories:
-            st.error("⚠️ 検索対象ソースが選択されていません。サイドバーで選択してください。")
-        elif query:
-            with st.spinner("Analyzing 700 Data Feeds... Standby for Analysis."):
-                # 検索実行
-                result = run_rag_search(query, selected_categories)
-                # 結果とクエリを保存（これでボタンがリセットされても消えない）
-                st.session_state.rag_result = result
-                st.session_state.last_query = query
-        else:
-            st.error("質問を入力してください。")
-
-    # 🚨 修正ポイント2: 保存された結果があれば表示（検索ボタンの外に出す）
-    # 🚨 修正箇所: 結果表示ブロック全体を置き換え
-    if st.session_state.rag_result:
-        result = st.session_state.rag_result
-        
-        if isinstance(result, str):
-            st.error(result)
-        else:
-            st.markdown(f"**💡 回答**\n\n{result['answer']}")
-            st.markdown("---")
-            st.markdown(f"**📚 参照された資料:** {', '.join(result['sources'])}") 
+    st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
+    
+    # --- システムフロー図 (修正版) ---
+    with st.expander("🔌 System Architecture (View Flow)"):
+        st.graphviz_chart("""
+        digraph RAG {
+            rankdir=LR;
+            node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="Helvetica", fontsize=10];
+            edge [fontname="Helvetica", fontsize=8];
+    
+            User [label="👨‍💻 USER\n(Query)", shape=ellipse, fillcolor="#e8f0fe"];
+            DB [label="📚 VECTOR DB\n(700 Tech Reports)", color="blue"];
+            AI [label="🧠 GENERATIVE AI\n(Claude 3 Haiku)", color="red", shape=component];
+            Output [label="🚀 OUTPUT\n(Future Roadmap)", shape=note, fillcolor="#d4edda"];
+    
+            User -> DB [label="Semantic Search"];
+            DB -> AI [label="Retrieval"];
+            User -> AI [label="Context"];
+            AI -> Output [label="Generation"];
             
-            with st.expander("📄 参照された原文コンテンツを確認する"):
-                st.code(result['context'], language="markdown")
-            # === 思考の深掘り機能エリア ===
-            st.markdown("---")
-            st.subheader("💡 Deep Dive & Expansion")
-            st.markdown("視点を変えて、この技術を深掘りします。")
-            
-            # ステート初期化
-            if "thought_expansion" not in st.session_state:
-                st.session_state.thought_expansion = None
-            
-            # 3つのボタンを横並びに
-            col_d1, col_d2, col_d3 = st.columns(3)
-            
-            with col_d1:
-                if st.button("⬆️ 抽象化 (上位概念)", key="btn_abstract", use_container_width=True):
-                    with st.spinner("Thinking Macro..."):
-                        st.session_state.thought_expansion = generate_thought_expansion(st.session_state.last_query, "abstract")
-            
-            with col_d2:
-                if st.button("⬇️ 具体化 (応用例)", key="btn_concrete", use_container_width=True):
-                    with st.spinner("Thinking Micro..."):
-                        st.session_state.thought_expansion = generate_thought_expansion(st.session_state.last_query, "concrete")
-            
-            with col_d3:
-                if st.button("↔️ 横展開 (関連技術)", key="btn_analogous", use_container_width=True):
-                    with st.spinner("Connecting Dots..."):
-                        st.session_state.thought_expansion = generate_thought_expansion(st.session_state.last_query, "analogous")
-
-            # 深掘り結果の表示
-            if st.session_state.thought_expansion:
-                data = st.session_state.thought_expansion
-
-                # 🚨 修正箇所: 結果のタイトル表示
-                st.markdown(f"### {data.get('title', 'Analysis Result')}")
-                
-                # 🚨 追加箇所: RAGではないことを明記する注釈
-                st.caption("※ この分析は、AIが広い視野で生成したアイデアです。必ずしもデータベース内の技術資料に基づいているとは限りません。")
-                
-                for item in data.get('items', []):
-                    st.write(f"• {item}")
-            
-            # === 技術マップ機能 ===
-            st.markdown("")
-            if st.button("🕸️ 技術体系マップを表示する", key="btn_map", use_container_width=True):
-                with st.spinner("Mapping Technology Landscape..."):
-                    dot_code = generate_tech_hierarchy(st.session_state.last_query)
-                    if dot_code:
-                        st.success("✅ マップ生成完了")
-                        st.graphviz_chart(dot_code) # 👈 これだけで図画できます！
-                        st.caption("※ AIが生成した概念図です。")
-                    else:
-                        st.error("マップの生成に失敗しました。")
-
-            # === エンタメ機能エリア ===
-            st.markdown("---")
-            st.subheader("🚀 2035 Vision Simulation")
-            st.markdown("この技術が実現した未来をシミュレーションします。")
-
-            # ステート初期化（ボタンを押した結果を保持するため）
-            if "career_card" not in st.session_state:
-                st.session_state.career_card = None
-            if "future_diary" not in st.session_state:
-                st.session_state.future_diary = None
-
-            # ボタンを2列に配置
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if st.button("🃏 未来の名刺を作る", key="btn_card", use_container_width=True):
-                    with st.spinner("Designing Future Career..."):
-                        st.session_state.career_card = generate_future_career(st.session_state.last_query)
-                        st.session_state.future_diary = None # 片方だけ表示するようにリセット
-
-            with col2:
-                if st.button("📖 未来の日記を読む", key="btn_diary", use_container_width=True):
-                    with st.spinner("Writing Future Story..."):
-                        st.session_state.future_diary = generate_future_diary(st.session_state.last_query)
-                        st.session_state.career_card = None # 片方だけ表示するようにリセット
-
-            # --- 名刺の表示 ---
-            if st.session_state.career_card:
-                card = st.session_state.career_card
-                st.success("✅ 2035年のキャリア予測")
-                
-                # カード風デザイン
-                with st.container(border=True):
-                    c1, c2 = st.columns([1, 3])
-                    with c1:
-                        st.image("https://img.icons8.com/fluency/96/future.png", width=70)
-                    with c2:
-                        st.markdown(f"### {card.get('job_title', 'Future Job')}")
-                        st.caption(f"想定年収: {card.get('estimated_salary', '---')}")
-                    
-                    st.markdown(f"**Mission:** {card.get('mission', '')}")
-                    st.markdown("**Required Skills:**")
-                    st.write(" ".join([f"`{s}`" for s in card.get('required_skills', [])]))
-
-            # --- 日記の表示 ---
-            if st.session_state.future_diary:
-                diary = st.session_state.future_diary
-                st.info("✅ 2035年の日常ログ")
-                
-                # 日記風デザイン
-                with st.container(border=True):
-                    st.markdown(f"### 📖 {diary.get('title', '無題')}")
-                    st.caption(f"📅 {diary.get('date', '2035')} | ✍️ {diary.get('author_profile', '匿名')}")
-                    st.write(diary.get('content', ''))
-
-
-elif app_mode == "📚 データカタログ一覧":
-    st.title("📚 Data Catalog")
-    # ... (カタログ表示ロジックはそのまま) ...
-    # もし以前のコードからコピペが必要なら指示ください
-    st.markdown("現在データベースに格納されている全技術レポートの一覧です。")
-    df = get_all_data_as_df()
-    df_filtered = df[df['Category'].isin(selected_categories)]
-    st.info(f"全データ数: {len(df)} 件 / 表示中: {len(df_filtered)} 件")
-    st.dataframe(
-        df_filtered,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Title": st.column_config.TextColumn("レポートタイトル", width="medium"),
-            "Category": st.column_config.TextColumn("カテゴリ", width="small"),
-        }
-    )
-
-# --- ログアウトボタン ---
-st.sidebar.markdown("---")
-if st.sidebar.button("ログアウト", key='logout_button_sidebar'):
-    st.session_state["password_correct"] = False
-    st.session_state.rag_result = None # ログアウト時に結果もクリア
-    st.rerun()
+            # 拡張機能フロー
+            subgraph cluster_ext
