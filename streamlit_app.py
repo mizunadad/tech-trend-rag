@@ -294,18 +294,41 @@ selected_categories = [CATEGORY_MAPPING[label] for label in selected_labels]
 # --- 画面分岐 ---
 
 if app_mode == "💬 AIチャット (RAG)":
+    # 1. タイトルとメッセージ（既存）
     st.title("🧬 NEXT-GEN CAREER BRAIN")
     st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
     st.markdown("---")
-    st.markdown("##### **[ACCESS GRANTED]**。KNOWLEDGE SYSTEM READY FOR QUERY.")
+    st.markdown("##### **[ACCESS GRANTED]**   KNOWLEDGE SYSTEM READY FOR QUERY.")
     st.markdown("---")
 
-    # 🚨 修正ポイント1: セッションステートの初期化
+    # 2. セッションステートの初期化（🚨 ここは消さずに残す！）
     if "rag_result" not in st.session_state:
         st.session_state.rag_result = None
     if "last_query" not in st.session_state:
         st.session_state.last_query = ""
 
+    # 3. システムフロー図の表示
+    st.graphviz_chart("""
+    digraph RAG {
+        rankdir=LR;
+        node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="Helvetica", fontsize=10];
+        edge [fontname="Helvetica", fontsize=8];
+
+        User [label="👨‍💻 USER\n(Query)", shape=ellipse, fillcolor="#e8f0fe"];
+        DB [label="📚 VECTOR DB\n(700 Tech Reports)", color="blue"];
+        AI [label="🧠 GENERATIVE AI\n(Claude 3.5 Sonnet)", color="red", shape=component];
+        Output [label="🚀 OUTPUT\n(Future Roadmap)", shape=note, fillcolor="#d4edda"];
+
+        User -> DB [label="Semantic Search"];
+        DB -> AI [label="Retrieval"];
+        User -> AI [label="Context"];
+        AI -> Output [label="Generation"];
+    }
+    """)
+
+    st.write("")
+
+    # 4.質問入力欄
     query = st.text_area("Enter Your Question ...🤣日本語でええよ🤣", height=100)
 
     # 検索ボタンが押されたら、結果をセッションに保存
