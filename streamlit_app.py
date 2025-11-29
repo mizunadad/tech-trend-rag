@@ -1,6 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components # 👈 追加
-import base64
 import os 
 import json
 import firebase_admin
@@ -25,17 +23,6 @@ def setup_firestore():
             return None
     return firestore.client()
 
-# --- Mermaid図の描画関数 (画像変換版: 確実な表示) ---
-def st_mermaid(graph_code):
-    # コードをBase64エンコードして、画像生成サービスのURLを作成
-    graphbytes = graph_code.encode("utf8")
-    base64_bytes = base64.urlsafe_b64encode(graphbytes)
-    base64_string = base64_bytes.decode("ascii")
-    
-    # mermaid.ink を使用して画像として表示
-    url = f"https://mermaid.ink/img/{base64_string}"
-    st.image(url, use_container_width=True)
-
 # --- 2. RAG検索ロジック ---
 @st.cache_resource
 def load_embedding_model():
@@ -43,7 +30,7 @@ def load_embedding_model():
 
 def run_rag_search(query, selected_categories):
     db = setup_firestore()
-    if not db: return "データベース接続に失敗しました。"
+    if not db: return {"answer": "データベース接続に失敗しました。", "sources": [], "context": ""}
     
     model = load_embedding_model()
     
@@ -51,7 +38,6 @@ def run_rag_search(query, selected_categories):
         query_embedding = model.encode(query)
         
         all_docs = []
-        # tech_docsコレクションからデータを取得
         docs_stream = db.collection("tech_docs").stream()
         
         for doc in docs_stream:
@@ -62,7 +48,7 @@ def run_rag_search(query, selected_categories):
                 all_docs.append(data)
 
         if not all_docs:
-            return "条件に一致するデータが見つかりません。サイドバーのフィルタ設定を確認してください。"
+            return {"answer": "条件に一致するデータが見つかりません。サイドバーのフィルタ設定を確認してください。", "sources": [], "context": ""}
 
         # 類似度計算
         doc_embeddings = np.array([doc['embedding'] for doc in all_docs])
@@ -103,7 +89,7 @@ def run_rag_search(query, selected_categories):
         }
             
     except Exception as e:
-        return f"❌ RAG検索失敗: サーバー内部エラーが発生しました ({e})"
+        return {"answer": f"❌ RAG検索失敗: サーバー内部エラーが発生しました ({e})", "sources": [], "context": ""}
 
 # --- 生成AI共通関数 (JSONパース強化版) ---
 def call_claude_json(prompt):
@@ -115,11 +101,13 @@ def call_claude_json(prompt):
             messages=[{"role": "user", "content": prompt}]
         )
         content = response.content[0].text
-        # JSON部分抽出
+        
         s_idx = content.find("{")
         e_idx = content.rfind("}")
+        
         if s_idx != -1 and e_idx != -1:
             json_str = content[s_idx:e_idx+1]
+            # 改行コード許容
             return json.loads(json_str, strict=False)
         else:
             return None
@@ -127,7 +115,7 @@ def call_claude_json(prompt):
         st.error(f"AI生成エラー: {e}")
         return None
 
-# --- 新機能: 未来の名刺 ---
+# --- 新機能群 ---
 def generate_future_career(topic):
     prompt = f"""
     You are a visionary career consultant in the year 2035.
@@ -143,7 +131,6 @@ def generate_future_career(topic):
     """
     return call_claude_json(prompt)
 
-# --- 新機能: 未来日記 ---
 def generate_future_diary(topic):
     prompt = f"""
     You are a novelist writing a 'slice of life' diary entry set in the year 2035.
@@ -159,7 +146,6 @@ def generate_future_diary(topic):
     """
     return call_claude_json(prompt)
 
-# --- 新機能: 思考の深掘り ---
 def generate_thought_expansion(topic, mode):
     instructions = {
         "abstract": "Identify superordinate concepts, macro trends, and 'Why it matters'.",
@@ -184,7 +170,6 @@ def generate_thought_expansion(topic, mode):
     """
     return call_claude_json(prompt)
 
-# --- 新機能: 技術階層マップ ---
 def generate_tech_hierarchy(topic):
     client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
     prompt = f"""
@@ -270,44 +255,38 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
     st.markdown("---")
     st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
-    # --- システムフロー図 (Mermaid版: 確実な表示) ---
+    
+    # --- システムフロー図 (標準Graphviz版) ---
+    # シンプルで確実なDOT記述に戻しました
     with st.expander("🔌 System Architecture (View Flow)"):
-        st_mermaid("""
-        graph LR
-            %% ノードの定義
-            User(("👨‍💻 USER<br>(Query)"))
-            DB[("📚 VECTOR DB<br>(700 Tech Reports)")]
-            AI[["🧠 GENERATIVE AI<br>(Claude 3 Haiku)"]]
-            Output> "🚀 OUTPUT<br>(Future Roadmap)"]
-
-            %% スタイル定義
-            style User fill:#e8f0fe,stroke:#333,stroke-width:2px
-            style DB fill:#e6f3ff,stroke:#00f,stroke-width:2px
-            style AI fill:#ffebee,stroke:#f00,stroke-width:2px
-            style Output fill:#d4edda,stroke:#333,stroke-width:2px
-
-            %% フロー定義
-            User -->|"Semantic Search"| DB
-            DB -->|"Retrieval"| AI
-            User -->|"Context"| AI
-            AI -->|"Generation"| Output
-
-            %% 拡張機能（サブグラフ）
-            subgraph Ext [Expansion Features]
-                direction TB
-                Expand("💡 Deep Dive")
-                Map("🕸️ Tech Map")
-                Fun("🔮 Entertainment")
-            end
+        st.graphviz_chart("""
+        digraph RAG {
+            rankdir=LR;
+            node [shape=box, style=filled, fillcolor="#f9f9f9"];
+    
+            User [label="USER", shape=ellipse, fillcolor="#e8f0fe"];
+            DB [label="VECTOR DB\n(700 Reports)", color="blue"];
+            AI [label="GEN-AI\n(Claude 3 Haiku)", color="red"];
+            Output [label="OUTPUT", shape=note, fillcolor="#d4edda"];
+    
+            User -> DB [label="Search"];
+            DB -> AI [label="Context"];
+            User -> AI [label="Query"];
+            AI -> Output [label="Answer"];
             
-            Output -.-> Expand
-            Output -.-> Map
-            Output -.-> Fun
-            
-            %% サブグラフのスタイル
-            style Ext fill:#fff,stroke:#999,stroke-dasharray: 5 5
-        """, height=350)
-
+            subgraph cluster_ext {
+                label = "Expansion";
+                style=dashed;
+                DeepDive [label="Deep Dive"];
+                Map [label="Tech Map"];
+                Fun [label="Entertainment"];
+                
+                Output -> DeepDive [style=dotted];
+                Output -> Map [style=dotted];
+                Output -> Fun [style=dotted];
+            }
+        }
+        """, use_container_width=True)
     st.markdown("---")
 
     # ステート初期化
@@ -323,7 +302,6 @@ if app_mode == "💬 AIチャット (RAG)":
         if not selected_categories:
             st.error("⚠️ 検索対象ソースが選択されていません。")
         elif query:
-            # 検索時は他の結果をリセット
             st.session_state.thought_expansion = None
             st.session_state.career_card = None
             st.session_state.future_diary = None
@@ -339,14 +317,16 @@ if app_mode == "💬 AIチャット (RAG)":
     if st.session_state.rag_result:
         result = st.session_state.rag_result
         
-        if isinstance(result, str):
-            st.error(result)
-        else:
+        if isinstance(result, dict):
             # RAG回答
             st.markdown(f"**💡 回答**\n\n{result['answer']}")
             st.markdown("---")
-            st.markdown(f"**📚 参照された資料:** {', '.join(result['sources'])}") 
             
+            # 参考資料
+            sources_str = ', '.join(result['sources']) if result['sources'] else "なし"
+            st.markdown(f"**📚 参照された資料:** {sources_str}") 
+            
+            # 原文表示
             with st.expander("📄 参照された原文コンテンツを確認する"):
                 st.code(result['context'], language="markdown")
 
@@ -371,7 +351,7 @@ if app_mode == "💬 AIチャット (RAG)":
             if st.session_state.thought_expansion:
                 data = st.session_state.thought_expansion
                 st.markdown(f"#### {data.get('title', 'Analysis')}")
-                st.caption("※ AIによるアイデア展開です。")
+                st.caption("※ この分析は、AIが広い視野で生成したアイデアです。必ずしもデータベース内の技術資料に基づいているとは限りません。")
                 for item in data.get('items', []):
                     st.write(f"• {item}")
 
@@ -381,8 +361,11 @@ if app_mode == "💬 AIチャット (RAG)":
                 with st.spinner("Mapping..."):
                     dot = generate_tech_hierarchy(st.session_state.last_query)
                     if dot:
+                        st.success("✅ マップ生成完了")
                         st.graphviz_chart(dot)
                         st.caption("※ AI生成の概念図")
+                    else:
+                        st.error("マップ生成に失敗しました")
 
             # === エンタメ機能エリア ===
             st.markdown("---")
@@ -419,6 +402,8 @@ if app_mode == "💬 AIチャット (RAG)":
                     st.markdown(f"### 📖 {diary.get('title', 'Diary')}")
                     st.caption(f"📅 {diary.get('date', '')} | ✍️ {diary.get('author_profile', '')}")
                     st.write(diary.get('content', ''))
+        else:
+            st.error(result)
 
 elif app_mode == "📚 データカタログ一覧":
     st.title("📚 Data Catalog")
