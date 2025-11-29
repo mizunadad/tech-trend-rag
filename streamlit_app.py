@@ -119,6 +119,38 @@ def generate_future_career(topic):
     except Exception as e:
         return None
 
+# --- 新機能: 未来日記生成ロジック ---
+def generate_future_diary(topic):
+    client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
+    
+    prompt = f"""
+    You are a novelist writing a 'slice of life' diary entry set in the year 2035.
+    The theme is: '{topic}' is now a normal part of everyday life in Japan.
+    Write a short, emotional, or funny diary entry (about 300 Japanese characters) from the perspective of an ordinary person (a student, a parent, or a worker).
+    Focus on how this technology has changed feelings, scenery, or daily routine.
+    
+    Output format (JSON):
+    {{
+        "date": "2035年X月X日 (Weather)",
+        "title": "Catchy Title",
+        "author_profile": "Example: '14歳 中学生' or '45歳 主婦'",
+        "content": "Diary content..."
+    }}
+    Only output the JSON.
+    """
+    
+    try:
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        import json
+        content = response.content[0].text
+        json_str = content[content.find("{"):content.rfind("}")+1]
+        return json.loads(json_str)
+    except Exception as e:
+        return None
 
 # --- 3. データ全件取得関数 (カタログ用) ---
 @st.cache_data(ttl=600) # 10分間キャッシュ
@@ -218,43 +250,75 @@ if app_mode == "💬 AIチャット (RAG)":
             st.error("質問を入力してください。")
 
     # 🚨 修正ポイント2: 保存された結果があれば表示（検索ボタンの外に出す）
+    # 🚨 修正箇所: 結果表示ブロック全体を置き換え
     if st.session_state.rag_result:
         result = st.session_state.rag_result
-
+        
         if isinstance(result, str):
             st.error(result)
         else:
             st.markdown(f"**💡 回答**\n\n{result['answer']}")
             st.markdown("---")
-            st.markdown(f"**📚 参照された資料:** {', '.join(result['sources'])}")
-
+            st.markdown(f"**📚 参照された資料:** {', '.join(result['sources'])}") 
+            
             with st.expander("📄 参照された原文コンテンツを確認する"):
                 st.code(result['context'], language="markdown")
-
-            # === 未来の名刺機能 ===
+            
+            # === エンタメ機能エリア ===
             st.markdown("---")
-            st.markdown("### 🔮 Future Career Analysis")
+            st.subheader("🚀 2035 Vision Simulation")
+            st.markdown("この技術が実現した未来をシミュレーションします。")
 
-            # 以前保存したクエリを使って名刺生成
-            if st.button("🃏 この技術で「2035年の未来の名刺」を作る", key="future_card_btn"):
-                with st.spinner("Generating Future Profile..."):
-                    # 保存しておいたクエリを使用
-                    card_data = generate_future_career(st.session_state.last_query)
+            # ステート初期化（ボタンを押した結果を保持するため）
+            if "career_card" not in st.session_state:
+                st.session_state.career_card = None
+            if "future_diary" not in st.session_state:
+                st.session_state.future_diary = None
 
-                    if card_data:
-                        st.success("✅ 2035年のキャリア予測が完了しました")
-                        col1, col2 = st.columns([1, 2])
-                        with col1:
-                            st.image("https://img.icons8.com/fluency/96/future.png", width=80)
-                            st.metric(label="想定年収 (2035)", value=card_data.get('estimated_salary', 'N/A'))
-                        with col2:
-                            st.subheader(card_data.get('job_title', 'Future Creator'))
-                            st.write(f"**Mission:** {card_data.get('mission', '')}")
-                            st.write("**Required Skills:**")
-                            skills = card_data.get('required_skills', [])
-                            st.write(" ".join([f"`{skill}`" for skill in skills]))
-                    else:
-                        st.error("未来の予測に失敗しました。もう一度試してください。")
+            # ボタンを2列に配置
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("🃏 未来の名刺を作る", key="btn_card", use_container_width=True):
+                    with st.spinner("Designing Future Career..."):
+                        st.session_state.career_card = generate_future_career(st.session_state.last_query)
+                        st.session_state.future_diary = None # 片方だけ表示するようにリセット
+
+            with col2:
+                if st.button("📖 未来の日記を読む", key="btn_diary", use_container_width=True):
+                    with st.spinner("Writing Future Story..."):
+                        st.session_state.future_diary = generate_future_diary(st.session_state.last_query)
+                        st.session_state.career_card = None # 片方だけ表示するようにリセット
+
+            # --- 名刺の表示 ---
+            if st.session_state.career_card:
+                card = st.session_state.career_card
+                st.success("✅ 2035年のキャリア予測")
+                
+                # カード風デザイン
+                with st.container(border=True):
+                    c1, c2 = st.columns([1, 3])
+                    with c1:
+                        st.image("https://img.icons8.com/fluency/96/future.png", width=70)
+                    with c2:
+                        st.markdown(f"### {card.get('job_title', 'Future Job')}")
+                        st.caption(f"想定年収: {card.get('estimated_salary', '---')}")
+                    
+                    st.markdown(f"**Mission:** {card.get('mission', '')}")
+                    st.markdown("**Required Skills:**")
+                    st.write(" ".join([f"`{s}`" for s in card.get('required_skills', [])]))
+
+            # --- 日記の表示 ---
+            if st.session_state.future_diary:
+                diary = st.session_state.future_diary
+                st.info("✅ 2035年の日常ログ")
+                
+                # 日記風デザイン
+                with st.container(border=True):
+                    st.markdown(f"### 📖 {diary.get('title', '無題')}")
+                    st.caption(f"📅 {diary.get('date', '2035')} | ✍️ {diary.get('author_profile', '匿名')}")
+                    st.write(diary.get('content', ''))
+
 
 elif app_mode == "📚 データカタログ一覧":
     st.title("📚 Data Catalog")
