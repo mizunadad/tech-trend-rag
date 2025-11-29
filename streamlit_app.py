@@ -265,42 +265,40 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("---")
 
     # 🚨 修正: with st.expander(...) を削除し、直接表示します
-   # 3. システムフロー図の表示 (Mermaid画像版)
     st.markdown("#### 🔌 System Architecture")
     
-    render_mermaid("""
-    graph LR
-        %% ノード定義
-        User(("👨‍💻 USER<br>(Query)"))
-        DB[("📚 VECTOR DB<br>(700 Tech Reports)")]
-        AI[["🧠 GENERATIVE AI<br>(Claude 3 Haiku)"]]
-        Output> "🚀 OUTPUT<br>(Future Roadmap)"]
+    st.graphviz_chart("""
+    digraph RAG {
+        rankdir=LR;
+        # フォントと形状のシンプルな設定
+        node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="sans-serif"];
+        edge [fontname="sans-serif"];
 
-        %% フロー定義
-        User -->|"Semantic Search"| DB
-        DB -->|"Retrieval"| AI
-        User -->|"Context"| AI
-        AI -->|"Generation"| Output
+        User [label="USER", shape=ellipse, fillcolor="#e8f0fe"];
+        DB [label="VECTOR DB\n(700 Reports)", color="blue"];
+        AI [label="GEN-AI\n(Claude 3 Haiku)", color="red"];
+        Output [label="OUTPUT", shape=note, fillcolor="#d4edda"];
 
-        %% 拡張機能エリア
-        subgraph Ext [Expansion Features]
-            direction TB
-            Expand("💡 Deep Dive")
-            Map("🕸️ Tech Map")
-            Fun("🔮 Entertainment")
-        end
+        User -> DB [label="Search"];
+        DB -> AI [label="Context"];
+        User -> AI [label="Query"];
+        AI -> Output [label="Answer"];
         
-        Output -.-> Expand
-        Output -.-> Map
-        Output -.-> Fun
-
-        %% スタイル定義
-        style User fill:#e8f0fe,stroke:#333,stroke-width:2px
-        style DB fill:#e6f3ff,stroke:#00f,stroke-width:2px
-        style AI fill:#ffebee,stroke:#f00,stroke-width:2px
-        style Output fill:#d4edda,stroke:#333,stroke-width:2px
-        style Ext fill:#fff,stroke:#999,stroke-dasharray: 5 5
-    """) 
+        # 拡張機能の表示
+        subgraph cluster_ext {
+            label = "Expansion";
+            style=dashed;
+            color=gray;
+            DeepDive [label="Deep Dive"];
+            Map [label="Tech Map"];
+            Fun [label="Entertainment"];
+            
+            Output -> DeepDive [style=dotted];
+            Output -> Map [style=dotted];
+            Output -> Fun [style=dotted];
+        }
+    }
+    """, use_container_width=True)
 
     st.markdown("---")
 
