@@ -85,6 +85,41 @@ def run_rag_search(query, selected_categories):
     except Exception as e:
         return f"❌ RAG検索失敗: サーバー内部エラーが発生しました ({e})"
 
+
+# --- 新機能: 未来の名刺生成ロジック ---
+def generate_future_career(topic):
+    client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
+    
+    prompt = f"""
+    You are a visionary career consultant in the year 2035.
+    Based on the technology topic: '{topic}', create a fictional, futuristic job profile.
+    
+    Output format (JSON):
+    {{
+        "job_title": "Cool sounding job title (English & Japanese)",
+        "estimated_salary": "Annual salary in 2035 (JPY)",
+        "required_skills": ["Skill 1", "Skill 2", "Skill 3"],
+        "mission": "A short, inspiring mission statement for this job."
+    }}
+    Only output the JSON.
+    """
+    
+    try:
+        response = client.messages.create(
+            model="claude-3-haiku-20240307",
+            max_tokens=500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        # JSON部分だけを抽出してパースする簡易処理
+        import json
+        content = response.content[0].text
+        # 簡易的にJSON部分を探す（{から}まで）
+        json_str = content[content.find("{"):content.rfind("}")+1]
+        return json.loads(json_str)
+    except Exception as e:
+        return None
+
+
 # --- 3. データ全件取得関数 (カタログ用) ---
 @st.cache_data(ttl=600) # 10分間キャッシュ
 def get_all_data_as_df():
@@ -180,6 +215,32 @@ if app_mode == "💬 AIチャット (RAG)":
                     
                     with st.expander("📄 参照された原文コンテンツを確認する"):
                         st.code(result['context'], language="markdown")
+                    # 🚨 === ここから追加：未来の名刺機能 === 🚨
+                    st.markdown("---")
+                    st.markdown("### 🔮 Future Career Analysis")
+                    if st.button("🃏 この技術で「2035年の未来の名刺」を作る", key="future_card_btn"):
+                        with st.spinner("Generating Future Profile..."):
+                            card_data = generate_future_career(query)
+
+                            if card_data:
+                                # 名刺風のデザイン表示
+                                st.success("✅ 2035年のキャリア予測が完了しました")
+
+                                # カラムを使ってレイアウト
+                                col1, col2 = st.columns([1, 2])
+
+                                with col1:
+                                    st.image("https://img.icons8.com/fluency/96/future.png", width=80) # 未来っぽいアイコン
+                                    st.metric(label="想定年収 (2035)", value=card_data['estimated_salary'])
+
+                                with col2:
+                                    st.subheader(card_data['job_title'])
+                                    st.write(f"**Mission:** {card_data['mission']}")
+                                    st.write("**Required Skills:**")
+                                    # スキルをタグ風に表示
+                                    st.write(" ".join([f"`{skill}`" for skill in card_data['required_skills']]))
+                            else:
+                                st.error("未来の予測に失敗しました。もう一度試してください。")
         else:
             st.error("質問を入力してください。")
 
