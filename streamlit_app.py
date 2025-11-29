@@ -229,24 +229,48 @@ if app_mode == "💬 AIチャット (RAG)":
     # 🚨 修正: st.expander を削除し、タイトルと図を直接配置
     st.markdown("#### 🔌 System Architecture")
     
+    # 🚨 修正: RAGと拡張機能を並列（Parallel）に描画する図に変更
     st.graphviz_chart("""
     digraph RAG {
         rankdir=LR;
-        # シンプルな設定
+        # ノードとエッジの共通設定
         node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="sans-serif"];
-        edge [fontname="sans-serif"];
+        edge [fontname="sans-serif", fontsize=10];
 
-        User [label="USER", shape=ellipse, fillcolor="#e8f0fe"];
-        DB [label="VECTOR DB", color="blue"];
-        AI [label="GEN-AI", color="red"];
-        Output [label="OUTPUT", shape=note, fillcolor="#d4edda"];
+        # 主要アクター
+        User [label="USER\n(Query)", shape=ellipse, fillcolor="#e8f0fe"];
+        DB [label="VECTOR DB\n(700 Reports)", color="blue"];
+        AI [label="GEN-AI\n(Claude 3)", color="red", style="filled,rounded"];
 
-        User -> DB [label="Search"];
+        # 1. RAGフロー (メインの出力)
+        RAG_Out [label="RAG OUTPUT\n(Fact Answer)", shape=note, fillcolor="#d4edda"];
+
+        # 2. 拡張機能フロー (RAGとは独立した直接生成)
+        subgraph cluster_expansion {
+            label = "Expansion Features (Direct API Call)";
+            style=dashed;
+            color="#666666";
+            fontcolor="#666666";
+            
+            DeepDive [label="💡 Deep Dive\n(Analysis/Map)", shape=component, fillcolor="#fff3cd"];
+            Vision [label="🚀 2035 Vision\n(Card/Diary)", shape=component, fillcolor="#e8daef"];
+        }
+
+        # RAGの接続 (実線)
+        User -> DB [label="Semantic Search"];
         DB -> AI [label="Context"];
         User -> AI [label="Query"];
-        AI -> Output [label="Answer"];
+        AI -> RAG_Out [label="Generation"];
+
+        # 拡張機能の接続 (点線：DBを経由しない独立プロセス)
+        AI -> DeepDive [label="Parallel Gen", style=dotted];
+        AI -> Vision [label="Parallel Gen", style=dotted];
+        
+        # 配置の調整（出力を縦に並べて見やすく）
+        {rank=same; RAG_Out; DeepDive; Vision}
     }
     """, use_container_width=True)
+
 
     st.markdown("---")
     # ステート管理
