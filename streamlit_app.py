@@ -244,9 +244,20 @@ if not st.session_state["password_correct"]:
 st.sidebar.title("🔧 Control Panel")
 app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧"])
 
+# ソースフィルター設定
 CATEGORY_MAPPING = {
+    # 既存・新規追加（ルートフォルダ）
     "Gartner Hype Cycle 2025": "gartner_2025",
-    "日経BP 技術トレンド": "nikkei_bp_2025_2035"
+    "日経BP 技術トレンド": "nikkei_bp_2025_2035",
+    "次世代発電技術": "次世代発電",
+    "自動車産業予測 2045": "自動車産業2045", # 👈 新規追加
+
+    # Articles_2025 内のサブカテゴリ
+    "Articles: AI Info": "AIinfo",
+    "Articles: Python & Web": "python_and_webtech",
+    "Articles: Quality & Security": "Quality_and_Sequrity",
+    "Articles: Semiconductor": "Semiconductor",
+    "Articles: Tips": "Tips"
 }
 
 st.sidebar.markdown("---")
