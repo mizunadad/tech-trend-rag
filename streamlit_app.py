@@ -242,6 +242,26 @@ if not st.session_state["password_correct"]:
 # --- 5. メインアプリ画面 ---
 
 st.sidebar.title("🔧 Control Panel")
+
+# 🚨 修正箇所: ログアウトボタンをここに移動
+# ログイン中のユーザー名を表示
+current_user = st.session_state.get("current_user", "Guest")
+st.sidebar.caption(f"Login as: **{current_user}**")
+
+if st.sidebar.button("ログアウト", key='logout_top'):
+    # ログアウト処理
+    st.session_state["password_correct"] = False
+    st.session_state["current_user"] = None
+    st.session_state.rag_result = None
+    st.session_state.thought_expansion = None
+    st.session_state.career_card = None
+    st.session_state.future_diary = None
+    st.rerun()
+
+st.sidebar.markdown("---")
+
+
+
 app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧"])
 
 CATEGORY_MAPPING = {
@@ -413,9 +433,9 @@ elif app_mode == "📚 データカタログ一覧":
         st.info(f"全データ数: {len(df)} 件 / 表示中: {len(df_filtered)} 件")
         st.dataframe(df_filtered, use_container_width=True, hide_index=True)
 
-st.sidebar.markdown("---")
-if st.sidebar.button("ログアウト", key='logout'):
-    st.session_state["password_correct"] = False
-    st.session_state["current_user"] = None
-    st.session_state.rag_result = None
-    st.rerun()
+#st.sidebar.markdown("---")
+#if st.sidebar.button("ログアウト", key='logout'):
+#    st.session_state["password_correct"] = False
+#    st.session_state["current_user"] = None
+#    st.session_state.rag_result = None
+#    st.rerun()
