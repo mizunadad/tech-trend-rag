@@ -218,26 +218,46 @@ def get_all_data_as_df():
 
 # --- 4. 認証ロジック ---
 def check_password():
-    if st.session_state.get("password_input") == st.secrets.get("APP_PASSWORD"):
-        del st.session_state["password_input"] 
-        return True
+    """入力されたパスワードが登録済みユーザーのものか確認する"""
+    input_pass = st.session_state.get("password_input")
+    
+    # Secretsからユーザーとパスワードの辞書を取得
+    # もし設定がない場合は空の辞書とする安全策
+    authorized_users = st.secrets.get("user_passwords", {})
+    
+    # 登録されたパスワードと照合
+    for username, password in authorized_users.items():
+        if input_pass == password:
+            del st.session_state["password_input"]
+            # 誰がログインしたかをセッションに記録
+            st.session_state["current_user"] = username
+            return True
+            
     return False
 
+# --- 認証状態の初期化 ---
 if "password_correct" not in st.session_state:
     st.session_state["password_correct"] = False
+if "current_user" not in st.session_state:
+    st.session_state["current_user"] = "Guest"
 
+# --- ログイン画面 ---
 if not st.session_state["password_correct"]:
     st.title("⚔️ CAREER DATA VAULT: AUTH")
     st.markdown("##### 次世代戦略AIへアクセスするには、認証が必要です。")
+    
     with st.form("login_form"):
+        # ユーザー名は入力させず、パスワードだけで識別します
         st.text_input("パスワード", type="password", key="password_input")
+        
         if st.form_submit_button("Login"):
             if check_password():
                 st.session_state["password_correct"] = True
                 st.rerun() 
             else:
                 st.error('パスワードが間違っています。')
-    st.stop() 
+    st.stop()
+
 
 # --- 5. メインアプリ画面 ---
 
