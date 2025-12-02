@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows版 uv 完全インストールガイド</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .step {
+            margin-bottom: 40px;
+            border-left: 4px solid #667eea;
+            padding-left: 20px;
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        .step h2 {
+            display: inline-block;
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+        
+        .step h3 {
+            color: #555;
+            margin: 20px 0 10px 0;
+            font-size: 1.3em;
+        }
+        
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Consolas', 'Courier New', monospace;
+            position: relative;
+        }
+        
+        .code-block code {
+            display: block;
+            white-space: pre;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background: #f5f5f5;
+        }
+        
+        footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Windows版 uv 完全インストールガイド</h1>
+            <p>次世代Pythonパッケージマネージャー - 10-100倍高速、完全無料</p>
+        </header>
+        
+        <div class="content">
+            <!-- ステップ1 -->
+            <div class="step">
+                <h2><span class="step-number">1</span>uvのインストール</h2>
+                
+                <h3>方法A: PowerShellによるインストール（推奨）</h3>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"</code>
+                </div>
+                
+                <div class="info-box">
+                    <strong>💡 ポイント:</strong> PowerShellを通常ユーザーで開いて実行してください。管理者権限は不要です。
+                </div>
+                
+                <h3>方法B: Scoopによるインストール</h3>
+                
+                <div class="info-box">
+                    <strong>💡 Scoopがインストールされていない場合:</strong>
+                    <div class="code-block" style="margin-top: 10px;">
+                        <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                        <code>Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression</code>
+                    </div>
+                </div>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>scoop install uv</code>
+                </div>
+                
+                <h3>インストール確認</h3>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>uv --version</code>
+                </div>
+                
+                <div class="success-box">
+                    <strong>✅ 成功例:</strong> <code>uv 0.5.15 (または最新バージョン)</code> と表示されればOKです。
+                </div>
+            </div>
+            
+            <!-- ステップ2 -->
+            <div class="step">
+                <h2><span class="step-number">2</span>Pythonのインストール（uvで管理）</h2>
+                
+                <h3>Python 3.12のインストール（推奨）</h3>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>uv python install 3.12</code>
+                </div>
+                
+                <h3>インストール済みPythonの確認</h3>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>uv python list --only-installed</code>
+                </div>
+            </div>
+            
+            <!-- ステップ3 -->
+            <div class="step">
+                <h2><span class="step-number">3</span>新規プロジェクトの作成</h2>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>uv init my-project
+cd my-project</code>
+                </div>
+                
+                <h3>Pythonバージョンの指定</h3>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>uv python pin 3.12</code>
+                </div>
+            </div>
+            
+            <!-- ステップ4 -->
+            <div class="step">
+                <h2><span class="step-number">4</span>パッケージの追加</h2>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>uv add numpy pandas matplotlib</code>
+                </div>
+                
+                <div class="success-box">
+                    <strong>✅ 自動処理:</strong> 仮想環境の自動作成、pyproject.tomlの更新、uv.lockの生成が自動で行われます。
+                </div>
+            </div>
+            
+            <!-- ステップ5 -->
+            <div class="step">
+                <h2><span class="step-number">5</span>仮想環境とスクリプト実行</h2>
+                
+                <h3>🎯 uvの革新的なアプローチ</h3>
+                
+                <div class="info-box">
+                    <strong>💡 重要:</strong> uvは<strong>activate/deactivateが基本的に不要</strong>です。
+                </div>
+                
+                <h3>方法1: uv run（推奨・activateが不要）</h3>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>uv run python my_script.py</code>
+                </div>
+                
+                <h3>方法2: 手動でactivate（従来の方法）</h3>
+                
+                <h4>PowerShellの場合</h4>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>.venv\Scripts\Activate.ps1
+python my_script.py
+deactivate</code>
+                </div>
+                
+                <h4>コマンドプロンプトの場合</h4>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>.venv\Scripts\activate.bat
+python my_script.py
+deactivate</code>
+                </div>
+                
+                <div class="warning-box">
+                    <strong>⚠️ PowerShellエラー対策:</strong>
+                    <div class="code-block" style="margin-top: 10px;">
+                        <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                        <code>Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser</code>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 比較表 -->
+            <div class="step">
+                <h2><span class="step-number">6</span>従来ツールとの比較</h2>
+                
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>機能</th>
+                                <th>uv</th>
+                                <th>pip+venv</th>
+                                <th>conda</th>
+                                <th>Poetry</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>速度</strong></td>
+                                <td>⚡超高速</td>
+                                <td>🐌遅い</td>
+                                <td>🐢非常に遅い</td>
+                                <td>🚶普通</td>
+                            </tr>
+                            <tr>
+                                <td><strong>依存解決</strong></td>
+                                <td>✅厳密</td>
+                                <td>⚠️基本的</td>
+                                <td>✅厳密(遅)</td>
+                                <td>✅厳密</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ロックファイル</strong></td>
+                                <td>✅自動</td>
+                                <td>❌なし</td>
+                                <td>✅別途</td>
+                                <td>✅自動</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Python管理</strong></td>
+                                <td>✅統合</td>
+                                <td>❌別途</td>
+                                <td>✅統合</td>
+                                <td>❌別途</td>
+                            </tr>
+                            <tr>
+                                <td><strong>課金リスク</strong></td>
+                                <td>✅なし</td>
+                                <td>✅なし</td>
+                                <td>⚠️あり</td>
+                                <td>✅なし</td>
+                            </tr>
+                            <tr>
+                                <td><strong>activate不要</strong></td>
+                                <td>✅可能</td>
+                                <td>❌必須</td>
+                                <td>❌必須</td>
+                                <td>✅可能</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- クイックリファレンス -->
+            <div class="step">
+                <h2><span class="step-number">7</span>よく使うコマンド</h2>
+                
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>コマンド</th>
+                                <th>説明</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>uv init</code></td>
+                                <td>新規プロジェクト作成</td>
+                            </tr>
+                            <tr>
+                                <td><code>uv add パッケージ名</code></td>
+                                <td>パッケージ追加</td>
+                            </tr>
+                            <tr>
+                                <td><code>uv remove パッケージ名</code></td>
+                                <td>パッケージ削除</td>
+                            </tr>
+                            <tr>
+                                <td><code>uv sync</code></td>
+                                <td>依存関係の同期</td>
+                            </tr>
+                            <tr>
+                                <td><code>uv run python script.py</code></td>
+                                <td>スクリプト実行</td>
+                            </tr>
+                            <tr>
+                                <td><code>uv pip list</code></td>
+                                <td>パッケージ一覧</td>
+                            </tr>
+                            <tr>
+                                <td><code>uv tree</code></td>
+                                <td>依存ツリー表示</td>
+                            </tr>
+                            <tr>
+                                <td><code>uv self update</code></td>
+                                <td>uv自体を更新</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 実践例 -->
+            <div class="step">
+                <h2><span class="step-number">8</span>ICテスト解析プロジェクト例</h2>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                    <code>uv init ic-test-analysis
+cd ic-test-analysis
+uv python pin 3.12
+uv add numpy pandas scipy matplotlib seaborn
+uv add scikit-learn openpyxl
+uv add --dev pytest ruff mypy</code>
+                </div>
+            </div>
+            
+            <!-- まとめ -->
+            <div class="step">
+                <h2><span class="step-number">9</span>まとめ</h2>
+                
+                <div class="success-box">
+                    <strong>✅ uvを選ぶべき理由:</strong>
+                    <ul>
+                        <li>圧倒的な速度（10-100倍）</li>
+                        <li>完全無料（商用利用OK）</li>
+                        <li>簡単な導入</li>
+                        <li>厳密な依存解決</li>
+                        <li>activate不要で快適</li>
+                    </ul>
+                </div>
+                
+                <div class="info-box">
+                    <strong>💡 最短スタートコマンド:</strong>
+                    <div class="code-block" style="margin-top: 10px;">
+                        <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+                        <code>powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+uv init my-project && cd my-project
+uv add numpy pandas
+uv run python script.py</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p><strong>📚 参考リンク</strong></p>
+            <p>公式ドキュメント: <a href="https://docs.astral.sh/uv/" target="_blank">https://docs.astral.sh/uv/</a></p>
+            <p style="margin-top: 15px; color: #999;">最終更新: 2025年10月</p>
+        </footer>
+    </div>
+    
+    <script>
+        function copyCode(button) {
+            const codeBlock = button.nextElementSibling;
+            const code = codeBlock.textContent;
+            
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'コピー完了!';
+                button.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#667eea';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
