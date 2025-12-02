@@ -109,16 +109,12 @@ def call_claude_json(prompt):
         st.error(f"AI生成エラー: {e}")
         return None
 
-# --- 新機能: 未来の名刺 (日本語強制 & 年収表示強化) ---
+# --- 新機能群 ---
 def generate_future_career(topic):
     prompt = f"""
     あなたは2035年のキャリアコンサルタントです。
     トピック: '{topic}' に基づいて、未来的でかっこいい架空の職業プロフィールを作成してください。
-
-    【重要】
-    - 出力する値はすべて「日本語」で記述してください。
-    - "job_title" は「英語 / 日本語」の形式にしてください。
-    
+    【重要】日本語で出力してください。
     Output format (JSON):
     {{
         "job_title": "英語名 / 日本語名",
@@ -130,26 +126,21 @@ def generate_future_career(topic):
     """
     return call_claude_json(prompt)
 
-# --- 新機能: 未来日記 (日本語強制) ---
 def generate_future_diary(topic):
     prompt = f"""
     あなたは小説家です。2035年を舞台に、'{topic}' が日常になった世界のショートショート日記を書いてください。
-    
-    【重要】
-    - 全文「日本語」で記述してください。
-    
+    【重要】日本語で出力してください。
     Output format (JSON):
     {{
         "date": "2035年X月X日 (天気)",
         "title": "タイトル",
         "author_profile": "例: 14歳 中学生",
-        "content": "日記の本文（300文字程度）..."
+        "content": "日記の本文..."
     }}
     Only output the JSON.
     """
     return call_claude_json(prompt)
 
-# --- 新機能: 思考の深掘り (日本語強制) ---
 def generate_thought_expansion(topic, mode):
     instructions = {
         "abstract": "この技術の上位概念、マクロトレンド、なぜ重要かを分析してください。",
@@ -165,10 +156,7 @@ def generate_thought_expansion(topic, mode):
     prompt = f"""
     あなたは技術ストラテジストです。トピック: '{topic}' を分析してください。
     指示: {instructions.get(mode, "")}
-    
-    【重要】
-    - 全ての項目を「日本語」で出力してください。
-
+    【重要】日本語で出力してください。
     Output format (JSON):
     {{
         "title": "{titles.get(mode, '分析結果')}",
@@ -178,21 +166,15 @@ def generate_thought_expansion(topic, mode):
     """
     return call_claude_json(prompt)
 
-# --- 新機能: 技術階層マップ (ロバスト性向上) ---
 def generate_tech_hierarchy(topic):
     client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
     prompt = f"""
-    Create a hierarchical technology map for the user's query: '{topic}'.
-    
-    IMPORTANT:
-    - If the query is a long sentence, extract the main keywords first.
-    - Labels MUST be in Japanese.
-    - Use concise labels (short words).
-    
+    Create a hierarchical technology map for: '{topic}'.
+    IMPORTANT: Extract main keywords. Labels MUST be in Japanese.
     Output ONLY valid Graphviz DOT code.
     - Use 'digraph G'
-    - Use 'node [shape=box, style=filled, fillcolor="white"]'
-    - Do not include markdown backticks.
+    - Use rectangular nodes.
+    - No markdown backticks.
     """
     try:
         response = client.messages.create(
@@ -216,63 +198,57 @@ def get_all_data_as_df():
         docs_list.append({"Title": d.get('title', ''), "Category": d.get('category', '')})
     return pd.DataFrame(docs_list)
 
-# --- 4. 認証ロジック ---
+# --- 4. 認証ロジック (マルチユーザー対応) ---
 def check_password():
     """入力されたパスワードが登録済みユーザーのものか確認する"""
     input_pass = st.session_state.get("password_input")
     
-    # Secretsからユーザーとパスワードの辞書を取得
-    # もし設定がない場合は空の辞書とする安全策
+    # Secretsからユーザー辞書を取得 (なければ旧APP_PASSWORDで救済)
     authorized_users = st.secrets.get("user_passwords", {})
     
-    # 登録されたパスワードと照合
+    # マルチユーザーチェック
     for username, password in authorized_users.items():
         if input_pass == password:
             del st.session_state["password_input"]
-            # 誰がログインしたかをセッションに記録
-            st.session_state["current_user"] = username
+            st.session_state["current_user"] = username # ユーザー名を保存
             return True
             
+    # 旧設定へのフォールバック
+    if input_pass == st.secrets.get("APP_PASSWORD"):
+        del st.session_state["password_input"]
+        st.session_state["current_user"] = "Family Member"
+        return True
+        
     return False
 
-# --- 認証状態の初期化 ---
 if "password_correct" not in st.session_state:
     st.session_state["password_correct"] = False
 if "current_user" not in st.session_state:
     st.session_state["current_user"] = "Guest"
 
-# --- ログイン画面 ---
 if not st.session_state["password_correct"]:
     st.title("⚔️ CAREER DATA VAULT: AUTH")
     st.markdown("##### 次世代戦略AIへアクセスするには、認証が必要です。")
-    
     with st.form("login_form"):
-        # ユーザー名は入力させず、パスワードだけで識別します
         st.text_input("パスワード", type="password", key="password_input")
-        
         if st.form_submit_button("Login"):
             if check_password():
                 st.session_state["password_correct"] = True
                 st.rerun() 
             else:
                 st.error('パスワードが間違っています。')
-    st.stop()
-
+    st.stop() 
 
 # --- 5. メインアプリ画面 ---
 
 st.sidebar.title("🔧 Control Panel")
 app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧"])
 
-# ソースフィルター設定
 CATEGORY_MAPPING = {
-    # 既存・新規追加（ルートフォルダ）
     "Gartner Hype Cycle 2025": "gartner_2025",
     "日経BP 技術トレンド": "nikkei_bp_2025_2035",
     "次世代発電技術": "次世代発電",
-    "自動車産業予測 2045": "自動車産業2045", # 👈 新規追加
-
-    # Articles_2025 内のサブカテゴリ
+    "自動車産業予測 2045": "自動車産業2045",
     "Articles: AI Info": "AIinfo",
     "Articles: Python & Web": "python_and_webtech",
     "Articles: Quality & Security": "Quality_and_Sequrity",
@@ -282,33 +258,33 @@ CATEGORY_MAPPING = {
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔍 検索対象ソース")
-#selected_labels = st.sidebar.multiselect("分析対象を選択", list(CATEGORY_MAPPING.keys()), list(CATEGORY_MAPPING.keys()))
-#selected_categories = [CATEGORY_MAPPING[label] for label in selected_labels]
-selected_categories = []
-
 st.sidebar.caption("検索したいデータソースにチェックを入れてください")
-
-# 辞書からループでチェックボックスを作成
+selected_categories = []
 for label, category_id in CATEGORY_MAPPING.items():
-    # value=True でデフォルトでチェックが入った状態にする
     if st.sidebar.checkbox(label, value=True, key=f"check_{category_id}"):
         selected_categories.append(category_id)
 
-# もし全て外してしまった場合の警告（オプション）
-if not selected_categories:
-    st.sidebar.warning("⚠️ 少なくとも1つ選択してください")
-
-
 if app_mode == "💬 AIチャット (RAG)":
+    
+    # 🚨 Welcomeメッセージの表示
+    user_name = st.session_state.get("current_user", "Guest")
+    st.success(f"👋 Welcome! {user_name}")
+
     st.title("🧬 NEXT-GEN CAREER BRAIN")
-    #st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
-    st.image("tech-trend-rag-family.jpg", caption="Concept: The Future Career Exploring System", use_container_width=True) 
-
-
+    st.image("tech-trend-rag-family.jpg", caption="Concept: The Future Career Exploring System", use_container_width=True)
     st.markdown("---")
     st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
 
-    # 🔌 システムフロー図
+    # プロンプトガイド
+    with st.expander("💡 ヒント：AIの性能を最大限に引き出す入力のコツ"):
+        st.markdown("""
+        **1. RAG検索（回答）の精度を上げたいとき**
+        * 具体的に書く: 「AI」ではなく「化学プラントにおけるAI活用事例」
+        **2. 技術マップを綺麗に出したいとき**
+        * 関係性を問う: 「〇〇を実現するための技術要素を教えて」
+        """)
+
+    # システム図
     st.markdown("#### 🔌 System Architecture")
     st.graphviz_chart("""
     digraph RAG {
@@ -334,9 +310,9 @@ if app_mode == "💬 AIチャット (RAG)":
         }
     }
     """, use_container_width=True)
-
     st.markdown("---")
-    
+
+    # ステート初期化
     if "rag_result" not in st.session_state: st.session_state.rag_result = None
     if "last_query" not in st.session_state: st.session_state.last_query = ""
     if "thought_expansion" not in st.session_state: st.session_state.thought_expansion = None
@@ -344,17 +320,7 @@ if app_mode == "💬 AIチャット (RAG)":
     if "future_diary" not in st.session_state: st.session_state.future_diary = None
 
     query = st.text_area("Enter Your Question ...🤣日本語でええよ🤣", height=100)
-    # 🚨 追加箇所: プロンプト入力のコツを伝えるガイド
-    with st.expander("💡 ヒント：AIの性能を最大限に引き出す入力のコツ"):
-        st.markdown("""
-        **1. RAG検索（回答）の精度を上げたいとき**
-        * **具体的に書く**: 単に「AI」だけでなく、「化学プラントにおけるAIの活用事例」のように書くと、関連資料がヒットしやすくなります。
-        * **背景を伝える**: 「私は〇〇を専攻しています。××の視点で教えて」と書くと、AIが文脈を理解して回答を調整してくれます。
-        
-        **2. 技術マップを綺麗に出したいとき**
-        * **要素を詰め込みすぎない**: 「水泳と化学と宇宙と料理」のように多すぎると、一直線の単純な図になりがちです。「水泳×センシング技術」のように**2つの掛け合わせ**に絞ると、深いツリーが生成されやすくなります。
-        * **関係性を問う**: 「〇〇を実現するための技術構成要素を教えて」のような聞き方をすると、綺麗な階層構造になりやすいです。
-        """)
+
     if st.button("🔍 Research Techs ", type="primary", key='rag_search_button'):
         if not selected_categories:
             st.error("⚠️ 検索対象ソースが選択されていません。")
@@ -377,7 +343,6 @@ if app_mode == "💬 AIチャット (RAG)":
             st.markdown(f"**📚 参照された資料:** {sources_str}") 
             with st.expander("📄 参照された原文"): st.code(result['context'], language="markdown")
             
-            # 深掘りボタン
             st.markdown("---")
             st.subheader("💡 Deep Dive & Expansion")
             c1, c2, c3 = st.columns(3)
@@ -397,19 +362,15 @@ if app_mode == "💬 AIチャット (RAG)":
                 st.caption("※ AIによるアイデア展開です。")
                 for item in d.get('items', []): st.write(f"• {item}")
 
-            # マップ
             st.markdown("")
-            if st.button("🕸️ 技術体系マップを表示する", key="btn_map", use_container_width=True):
+            if st.button("🕸️ 技術マップ", key="btn_map", use_container_width=True):
                 with st.spinner("Mapping..."):
                     dot = generate_tech_hierarchy(st.session_state.last_query)
                     if dot:
                         st.success("✅ マップ生成完了")
                         st.graphviz_chart(dot)
                         st.caption("※ AI生成の概念図")
-                    else:
-                        st.error("マップ生成に失敗しました。別のキーワードで試してください。")
 
-            # エンタメ
             st.markdown("---")
             st.subheader("🚀 2035 Vision Simulation")
             ec1, ec2 = st.columns(2)
@@ -422,33 +383,25 @@ if app_mode == "💬 AIチャット (RAG)":
                     st.session_state.future_diary = generate_future_diary(st.session_state.last_query)
                     st.session_state.career_card = None
 
-            # 🚨 名刺レイアウト修正：年収をメトリック表示
             if st.session_state.career_card:
                 c = st.session_state.career_card
                 st.success("✅ 2035 Career Prediction")
                 with st.container(border=True):
                     col_img, col_txt = st.columns([1, 3])
-                    with col_img:
-                        st.image("https://img.icons8.com/fluency/96/future.png", width=80)
+                    with col_img: st.image("https://img.icons8.com/fluency/96/future.png", width=80)
                     with col_txt:
-                        st.markdown(f"### {c.get('job_title', 'Unknown Job')}")
-                        # st.metricを使って年収を強調表示
+                        st.markdown(f"### {c.get('job_title', 'Future Job')}")
                         st.metric(label="想定年収 (2035)", value=c.get('estimated_salary', '---'))
-                    
-                    st.markdown("---")
                     st.write(f"**Mission:** {c.get('mission', '')}")
-                    st.write("**Required Skills:**")
-                    # スキルをタグ風に
-                    skills = c.get('required_skills', [])
-                    st.write(" ".join([f"`{s}`" for s in skills]))
+                    st.write(f"**Skills:** {', '.join(c.get('required_skills', []))}")
 
             if st.session_state.future_diary:
                 d = st.session_state.future_diary
-                st.info("✅ 2035 Daily Log")
+                st.info("✅ 2035 Log")
                 with st.container(border=True):
-                    st.markdown(f"### 📖 {d.get('title', 'Diary')}")
-                    st.caption(f"📅 {d.get('date', '')} | ✍️ {d.get('author_profile', '')}")
-                    st.write(d.get('content', ''))
+                    st.markdown(f"### {d.get('title')}")
+                    st.caption(f"{d.get('date')} | {d.get('author_profile')}")
+                    st.write(d.get('content'))
         else:
             st.error(result)
 
@@ -457,10 +410,12 @@ elif app_mode == "📚 データカタログ一覧":
     df = get_all_data_as_df()
     if not df.empty:
         df_filtered = df[df['Category'].isin(selected_categories)]
+        st.info(f"全データ数: {len(df)} 件 / 表示中: {len(df_filtered)} 件")
         st.dataframe(df_filtered, use_container_width=True, hide_index=True)
 
 st.sidebar.markdown("---")
 if st.sidebar.button("ログアウト", key='logout'):
     st.session_state["password_correct"] = False
+    st.session_state["current_user"] = None
     st.session_state.rag_result = None
     st.rerun()
