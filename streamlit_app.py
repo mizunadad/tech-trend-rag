@@ -262,8 +262,22 @@ CATEGORY_MAPPING = {
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔍 検索対象ソース")
-selected_labels = st.sidebar.multiselect("分析対象を選択", list(CATEGORY_MAPPING.keys()), list(CATEGORY_MAPPING.keys()))
-selected_categories = [CATEGORY_MAPPING[label] for label in selected_labels]
+#selected_labels = st.sidebar.multiselect("分析対象を選択", list(CATEGORY_MAPPING.keys()), list(CATEGORY_MAPPING.keys()))
+#selected_categories = [CATEGORY_MAPPING[label] for label in selected_labels]
+selected_categories = []
+
+st.sidebar.caption("検索したいデータソースにチェックを入れてください")
+
+# 辞書からループでチェックボックスを作成
+for label, category_id in CATEGORY_MAPPING.items():
+    # value=True でデフォルトでチェックが入った状態にする
+    if st.sidebar.checkbox(label, value=True, key=f"check_{category_id}"):
+        selected_categories.append(category_id)
+
+# もし全て外してしまった場合の警告（オプション）
+if not selected_categories:
+    st.sidebar.warning("⚠️ 少なくとも1つ選択してください")
+
 
 if app_mode == "💬 AIチャット (RAG)":
     st.title("🧬 NEXT-GEN CAREER BRAIN")
