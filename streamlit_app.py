@@ -346,33 +346,38 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("#### 🔌 System Architecture")
     render_mermaid("""
     graph LR
-        User(("USER"))
-        DB[("VECTOR DB")]
-        AI[["GEN-AI"]]
-        Output> "OUTPUT"]
+        %% ノード定義 (HTMLタグ除去)
+        User((User/Query))
+        DB[(Vector DB)]
+        AI[[Gen-AI Claude]]
+        Output>Output Result]
 
+        %% フロー定義
         User -->|Search| DB
-        DB -->|Context| AI
-        User -->|Query| AI
-        AI -->|Generate| Output
+        DB -->|Retrieval| AI
+        User -->|Context| AI
+        AI -->|Generation| Output
 
-        subgraph Ext [Parallel Expansion]
+        %% 拡張機能エリア
+        subgraph Expansion [Expansion Features]
             direction TB
-            DeepDive("Deep Dive")
-            Map("Tech Map")
-            Fun("Entertainment")
+            DeepDive(Deep Dive Analysis)
+            Map(Tech Map Visualization)
+            Fun(2035 Vision Card/Diary)
         end
         
-        AI -.-> DeepDive
-        AI -.-> Map
-        AI -.-> Fun
+        %% 接続
+        Output -.->|Analyze| DeepDive
+        Output -.->|Visualize| Map
+        Output -.->|Imagine| Fun
 
-        style User fill:#e8f0fe,stroke:#333
-        style DB fill:#e6f3ff,stroke:#00f
-        style AI fill:#ffebee,stroke:#f00
-        style Output fill:#d4edda,stroke:#333
-        style Ext fill:#fff,stroke:#999,stroke-dasharray: 5 5
-    """)
+        %% スタイル定義
+        style User fill:#e8f0fe,stroke:#333,stroke-width:2px
+        style DB fill:#e6f3ff,stroke:#00f,stroke-width:2px
+        style AI fill:#ffebee,stroke:#f00,stroke-width:2px
+        style Output fill:#d4edda,stroke:#333,stroke-width:2px
+        style Expansion fill:#fff,stroke:#999,stroke-dasharray: 5 5
+    """) 
     st.markdown("---")
 
     if "rag_result" not in st.session_state: st.session_state.rag_result = None
