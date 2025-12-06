@@ -295,37 +295,37 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("#### 🔌 System Architecture")
     render_mermaid("""
     graph LR
-        %% ノード定義
-        User(("👨‍💻 USER<br>(Query)"))
-        DB[("📚 VECTOR DB<br>(700 Reports)")]
-        AI[["🧠 GEN-AI<br>(Claude 3 Haiku)"]]
-        Output> "🚀 OUTPUT<br>(RAG Result)"]
+        %% ノード定義 (HTMLタグ除去)
+        User((User/Query))
+        DB[(Vector DB)]
+        AI[[Gen-AI Claude]]
+        Output>Output Result]
 
         %% フロー定義
-        User -->|"Semantic Search"| DB
-        DB -->|"Retrieval"| AI
-        User -->|"Context"| AI
-        AI -->|"Generation"| Output
+        User -->|Search| DB
+        DB -->|Retrieval| AI
+        User -->|Context| AI
+        AI -->|Generation| Output
 
-        %% 拡張機能エリア（並列処理を表現）
-        subgraph Ext [Expansion Features (Direct API Call)]
+        %% 拡張機能エリア
+        subgraph Expansion [Expansion Features]
             direction TB
-            DeepDive("💡 Deep Dive<br>(Analysis)")
-            Map("🕸️ Tech Map<br>(Visualization)")
-            Fun("🔮 2035 Vision<br>(Card/Diary)")
+            DeepDive(Deep Dive Analysis)
+            Map(Tech Map Visualization)
+            Fun(2035 Vision Card/Diary)
         end
-        
-        %% AIから拡張機能への点線接続
-        AI -.->|"Analyze"| DeepDive
-        AI -.->|"Visualize"| Map
-        AI -.->|"Imagine"| Fun
+
+        %% 接続
+        Output -.->|Analyze| DeepDive
+        Output -.->|Visualize| Map
+        Output -.->|Imagine| Fun
 
         %% スタイル定義
         style User fill:#e8f0fe,stroke:#333,stroke-width:2px
         style DB fill:#e6f3ff,stroke:#00f,stroke-width:2px
         style AI fill:#ffebee,stroke:#f00,stroke-width:2px
         style Output fill:#d4edda,stroke:#333,stroke-width:2px
-        style Ext fill:#fff,stroke:#999,stroke-dasharray: 5 5
+        style Expansion fill:#fff,stroke:#999,stroke-dasharray: 5 5
     """)
     st.markdown("---")
 
