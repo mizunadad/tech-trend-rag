@@ -8,6 +8,8 @@ import anthropic
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
+import base64
+import shutil
 
 # --- 1. Firestore接続 ---
 @st.cache_resource
@@ -57,7 +59,7 @@ def run_rag_search(query, selected_categories):
 
         context_text = "\n\n---\n\n".join([doc.get('content', '') for doc in top_docs])
         
-        # メタデータ抽出
+        # 思考エレベーター用のメタデータ抽出
         meta_context_list = []
         for doc in top_docs:
             title = doc.get('title', 'No Title')
@@ -178,6 +180,7 @@ def generate_thought_expansion(topic, mode, meta_context=""):
     """
     return call_claude_json(prompt)
 
+# 🚨 復活: 技術階層マップ生成ロジック
 def generate_tech_hierarchy(topic):
     client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
     prompt = f"""
@@ -198,6 +201,14 @@ def generate_tech_hierarchy(topic):
         return dot_code.replace("```graphviz", "").replace("```", "").strip()
     except:
         return None
+
+# --- Mermaid図の描画関数 (画像変換版) ---
+def render_mermaid(graph_code):
+    graphbytes = graph_code.encode("utf8")
+    base64_bytes = base64.urlsafe_b64encode(graphbytes)
+    base64_string = base64_bytes.decode("ascii")
+    url = f"https://mermaid.ink/img/{base64_string}"
+    st.image(url, use_container_width=True)
 
 @st.cache_data(ttl=600)
 def get_all_data_as_df():
@@ -282,12 +293,38 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("---")
     st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
     
-    # 🚨 修正: システムフロー図を一時的に削除（エラー回避のため）
-    # ここにあった st.graphviz_chart を削除しました。
-    
+    st.markdown("#### 🔌 System Architecture")
+    render_mermaid("""
+    graph LR
+        User(("👨‍💻 USER<br>(Query)"))
+        DB[("📚 VECTOR DB<br>(700 Reports)")]
+        AI[["🧠 GEN-AI<br>(Claude 3 Haiku)"]]
+        Output> "🚀 OUTPUT<br>(RAG Result)"]
+
+        User -->|"Semantic Search"| DB
+        DB -->|"Retrieval"| AI
+        User -->|"Context"| AI
+        AI -->|"Generation"| Output
+
+        subgraph Ext [Expansion Features (Direct API Call)]
+            direction TB
+            DeepDive("💡 Deep Dive<br>(Analysis)")
+            Map("🕸️ Tech Map<br>(Visualization)")
+            Fun("🔮 2035 Vision<br>(Card/Diary)")
+        end
+        
+        AI -.->|"Analyze"| DeepDive
+        AI -.->|"Visualize"| Map
+        AI -.->|"Imagine"| Fun
+
+        style User fill:#e8f0fe,stroke:#333,stroke-width:2px
+        style DB fill:#e6f3ff,stroke:#00f,stroke-width:2px
+        style AI fill:#ffebee,stroke:#f00,stroke-width:2px
+        style Output fill:#d4edda,stroke:#333,stroke-width:2px
+        style Ext fill:#fff,stroke:#999,stroke-dasharray: 5 5
+    """)
     st.markdown("---")
 
-    # ステート初期化
     if "rag_result" not in st.session_state: st.session_state.rag_result = None
     if "last_query" not in st.session_state: st.session_state.last_query = ""
     if "thought_expansion" not in st.session_state: st.session_state.thought_expansion = None
@@ -303,7 +340,7 @@ if app_mode == "💬 AIチャット (RAG)":
             st.session_state.thought_expansion = None
             st.session_state.career_card = None
             st.session_state.future_diary = None
-            with st.spinner("Analyzing..."):
+            with st.spinner("Analyzing 700 Data Feeds... Standby for Analysis."):
                 st.session_state.rag_result = run_rag_search(query, selected_categories)
                 st.session_state.last_query = query
         else:
@@ -351,6 +388,7 @@ if app_mode == "💬 AIチャット (RAG)":
                 st.caption("※ AIによるアイデア展開です。")
                 for item in d.get('items', []): st.write(f"• {item}")
 
+            # 🚨 復活: 技術マップ機能
             st.markdown("")
             if st.button("🕸️ 技術体系マップを表示する", key="btn_map", use_container_width=True):
                 with st.spinner("Mapping..."):
@@ -360,7 +398,7 @@ if app_mode == "💬 AIチャット (RAG)":
                         st.graphviz_chart(dot)
                         st.caption("※ AI生成の概念図")
                     else:
-                        st.error("マップ生成に失敗しました。別のキーワードで試してください。")
+                        st.error("マップ生成に失敗しました")
 
             st.markdown("---")
             st.subheader("🚀 2035 Vision Simulation")
@@ -383,7 +421,7 @@ if app_mode == "💬 AIチャット (RAG)":
                     col_img, col_txt = st.columns([1, 3])
                     with col_img: st.image("https://img.icons8.com/fluency/96/future.png", width=80)
                     with col_txt:
-                        st.markdown(f"### {c.get('job_title', 'Unknown Job')}")
+                        st.markdown(f"### {c.get('job_title', 'Future Job')}")
                         st.metric(label="想定年収 (2035)", value=c.get('estimated_salary', '---'))
                     st.write(f"**Mission:** {c.get('mission', '')}")
                     st.write(f"**Skills:** {', '.join(c.get('required_skills', []))}")
@@ -400,13 +438,18 @@ if app_mode == "💬 AIチャット (RAG)":
 
 elif app_mode == "📚 データカタログ一覧":
     st.title("📚 Data Catalog")
+    st.markdown("現在データベースに格納されている全技術レポートの一覧です。")
     df = get_all_data_as_df()
     if not df.empty:
         df_filtered = df[df['Category'].isin(selected_categories)]
+        st.info(f"全データ数: {len(df)} 件 / 表示中: {len(df_filtered)} 件")
         st.dataframe(df_filtered, use_container_width=True, hide_index=True)
+    else:
+        st.warning("データが見つかりません。")
 
 st.sidebar.markdown("---")
 if st.sidebar.button("ログアウト", key='logout'):
     st.session_state["password_correct"] = False
+    st.session_state["current_user"] = None
     st.session_state.rag_result = None
     st.rerun()
