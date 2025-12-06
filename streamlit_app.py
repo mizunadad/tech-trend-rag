@@ -1,7 +1,6 @@
 import streamlit as st
 import os 
 import json
-import shutil
 import firebase_admin
 from firebase_admin import credentials, firestore
 from sentence_transformers import SentenceTransformer
@@ -9,7 +8,7 @@ import anthropic
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-import base64
+import base64 # 👈 画像表示用に必要
 
 # --- 1. Firestore接続 ---
 @st.cache_resource
@@ -25,7 +24,7 @@ def setup_firestore():
             return None
     return firestore.client()
 
-# --- 2. RAG検索ロジック (メタデータ取得強化版) ---
+# --- 2. RAG検索ロジック ---
 @st.cache_resource
 def load_embedding_model():
     return SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
@@ -57,21 +56,17 @@ def run_rag_search(query, selected_categories):
         top_indices = np.argsort(similarities)[::-1][:5]
         top_docs = [all_docs[i] for i in top_indices]
 
-        # コンテキスト構築 (回答生成用)
         context_text = "\n\n---\n\n".join([doc.get('content', '') for doc in top_docs])
         
-        # 🚨 新機能: 思考エレベーター用の「要約・分析」コンテキスト構築
-        # これが「具体→抽象」の材料になります
+        # 思考エレベーター用のメタデータ抽出
         meta_context_list = []
         for doc in top_docs:
             title = doc.get('title', 'No Title')
             summary = doc.get('summary_section', '')
             analysis = doc.get('analysis_section', '')
-            meta_context_list.append(f"■事例名: {title}\n[技術要約]\n{summary}\n[立ち位置分析]\n{analysis}")
-        
+            meta_context_list.append(f"■事例名: {title}\n[要約]\n{summary}\n[分析]\n{analysis}")
         meta_context = "\n\n".join(meta_context_list)
-
-        # Claude API呼び出し (通常回答)
+        
         client = anthropic.Anthropic(api_key=st.secrets["CLAUDE_API_KEY"])
         
         prompt = f"""
@@ -87,7 +82,7 @@ def run_rag_search(query, selected_categories):
         """
         
         response = client.messages.create(
-            model="claude-3-haiku-20240307",
+            model="claude-3-haiku-20240307", # 👈 Haikuに統一
             max_tokens=2000,
             messages=[{"role": "user", "content": prompt}]
         )
@@ -98,7 +93,7 @@ def run_rag_search(query, selected_categories):
             "answer": response.content[0].text,
             "sources": sources,
             "context": context_text,
-            "meta_context": meta_context # 👈 これを深掘り機能に渡します
+            "meta_context": meta_context
         }
             
     except Exception as e:
@@ -110,7 +105,7 @@ def call_claude_json(prompt):
     try:
         response = client.messages.create(
             model="claude-3-haiku-20240307",
-            max_tokens=2000,
+            max_tokens=1000,
             messages=[{"role": "user", "content": prompt}]
         )
         content = response.content[0].text
@@ -125,7 +120,7 @@ def call_claude_json(prompt):
         st.error(f"AI生成エラー: {e}")
         return None
 
-# --- Mermaid図の描画関数 (画像変換版) ---
+# --- Mermaid図の描画関数 (画像変換版: 最も安定) ---
 def render_mermaid(graph_code):
     graphbytes = graph_code.encode("utf8")
     base64_bytes = base64.urlsafe_b64encode(graphbytes)
@@ -133,76 +128,18 @@ def render_mermaid(graph_code):
     url = f"https://mermaid.ink/img/{base64_string}"
     st.image(url, use_container_width=True)
 
-# --- 新機能: 思考の深掘り (Knowledge Elevator) ---
-# 🚨 修正: Firestoreから取得した「事実(meta_context)」をベースに分析させる
-def generate_thought_expansion(topic, mode, meta_context=""):
-    
-    base_instruction = ""
-    if meta_context:
-        base_instruction = f"""
-        以下は、検索された具体的な技術事例の「要約」と「分析」データです。
-        まず、これらの事例に共通する構造や成功要因を読み解いてください。
-        
-        【参照データ】
-        {meta_context}
-        """
-    
-    instructions = {
-        "abstract": """
-        【Mode: 抽象化 (Bottom-Up)】
-        参照データの個別の事象から、普遍的な「成功の法則」や「構造的な強み」を抽出してください。
-        「なぜこれらの技術が注目されているのか？」の本質を言語化してください。
-        """,
-        "concrete": """
-        【Mode: 具体化 (Top-Down)】
-        参照データから抽出できる強みを活かして、2030年に解決すべき「社会課題（SDGs等）」への具体的なアプローチを提案してください。
-        「この技術があれば、他にどんな問題が解決できるか？」を具体的にリストアップしてください。
-        """,
-        "analogous": """
-        【Mode: 横展開 (Horizontal)】
-        参照データの「成功のロジック」を、全く異なる異分野（農業、医療、エンタメなど）に転用するアイデアを出してください。
-        技術スタックは違っても、構造が似ているチャンスを見つけてください。
-        """
-    }
-    
-    titles = {
-        "abstract": "⬆️ 抽象化：強みの法則化 (Bottom-Up)",
-        "concrete": "⬇️ 具体化：社会実装プラン (Top-Down)",
-        "analogous": "↔️ 横展開：異分野イノベーション (Horizontal)"
-    }
-    
-    prompt = f"""
-    あなたは高度な技術ストラテジストです。トピック: '{topic}' を分析します。
-    
-    {base_instruction}
-    
-    {instructions.get(mode, "")}
-    
-    【重要】
-    - 全ての項目を「日本語」で出力してください。
-    - 抽象的な概念だけでなく、納得感のあるロジックを提示してください。
-
-    Output format (JSON):
-    {{
-        "title": "{titles.get(mode, '分析結果')}",
-        "items": ["洞察1", "洞察2", "洞察3", "洞察4", "洞察5"]
-    }}
-    Only output the JSON.
-    """
-    return call_claude_json(prompt)
-
-# --- その他新機能 ---
+# --- 新機能群 ---
 def generate_future_career(topic):
     prompt = f"""
     あなたは2035年のキャリアコンサルタントです。
     トピック: '{topic}' に基づいて、未来的でかっこいい架空の職業プロフィールを作成してください。
-    【重要】日本語で出力。job_titleは「英語 / 日本語」。
+    【重要】日本語で出力してください。
     Output format (JSON):
     {{
-        "job_title": "Eng / Jpn",
+        "job_title": "英語名 / 日本語名",
         "estimated_salary": "15,000,000 JPY",
-        "required_skills": ["Skill 1", "Skill 2", "Skill 3"],
-        "mission": "Mission statement"
+        "required_skills": ["スキル1", "スキル2", "スキル3"],
+        "mission": "短く、情熱的なミッションステートメント"
     }}
     Only output the JSON.
     """
@@ -211,13 +148,40 @@ def generate_future_career(topic):
 def generate_future_diary(topic):
     prompt = f"""
     あなたは小説家です。2035年を舞台に、'{topic}' が日常になった世界のショートショート日記を書いてください。
-    【重要】日本語で出力。
+    【重要】日本語で出力してください。
     Output format (JSON):
     {{
         "date": "2035年X月X日 (天気)",
         "title": "タイトル",
-        "author_profile": "属性",
-        "content": "本文..."
+        "author_profile": "例: 14歳 中学生",
+        "content": "日記の本文..."
+    }}
+    Only output the JSON.
+    """
+    return call_claude_json(prompt)
+
+def generate_thought_expansion(topic, mode, meta_context=""):
+    base_inst = f"参照データ:\n{meta_context}" if meta_context else ""
+    instructions = {
+        "abstract": "この技術の上位概念、マクロトレンド、なぜ重要かを分析してください。",
+        "concrete": "2030年における具体的な応用例、製品、産業をリストアップしてください。",
+        "analogous": "意外な組み合わせ、他分野への転用、アナロジーを提案してください。"
+    }
+    titles = {
+        "abstract": "抽象化 (上位概念・トレンド)",
+        "concrete": "具体化 (2030年の応用例)",
+        "analogous": "横展開 (異分野結合)"
+    }
+    
+    prompt = f"""
+    あなたは技術ストラテジストです。トピック: '{topic}' を分析してください。
+    {base_inst}
+    指示: {instructions.get(mode, "")}
+    【重要】日本語で出力してください。
+    Output format (JSON):
+    {{
+        "title": "{titles.get(mode, '分析結果')}",
+        "items": ["項目1", "項目2", "項目3", "項目4", "項目5"]
     }}
     Only output the JSON.
     """
@@ -315,40 +279,48 @@ CATEGORY_MAPPING = {
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔍 検索対象ソース")
-selected_labels = st.sidebar.multiselect("分析対象を選択", list(CATEGORY_MAPPING.keys()), list(CATEGORY_MAPPING.keys()))
-selected_categories = [CATEGORY_MAPPING[label] for label in selected_labels]
+st.sidebar.caption("検索したいデータソースにチェックを入れてください")
+selected_categories = []
+for label, category_id in CATEGORY_MAPPING.items():
+    if st.sidebar.checkbox(label, value=True, key=f"check_{category_id}"):
+        selected_categories.append(category_id)
 
 if app_mode == "💬 AIチャット (RAG)":
     st.title("🧬 NEXT-GEN CAREER BRAIN")
-    st.markdown("#### **Generate Your Future Roadmap. Your Personal Growth Strategy AI.**")
+    st.image("tech-trend-rag-family.jpg", caption="Concept: The Future Career Exploring System", use_container_width=True)
     st.markdown("---")
     st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
     
-    # Mermaid図の表示
+    # 🔌 システムフロー図 (Mermaid画像版: 修正済み)
     st.markdown("#### 🔌 System Architecture")
     render_mermaid("""
     graph LR
+        %% ノード定義
         User(("👨‍💻 USER<br>(Query)"))
         DB[("📚 VECTOR DB<br>(700 Reports)")]
         AI[["🧠 GEN-AI<br>(Claude 3 Haiku)"]]
-        Output> "🚀 OUTPUT<br>(Future Roadmap)"]
+        Output> "🚀 OUTPUT<br>(RAG Result)"]
 
+        %% フロー定義
         User -->|"Semantic Search"| DB
         DB -->|"Retrieval"| AI
         User -->|"Context"| AI
         AI -->|"Generation"| Output
 
-        subgraph Ext [Expansion Features]
+        %% 拡張機能エリア（並列処理を表現）
+        subgraph Ext [Expansion Features (Direct API Call)]
             direction TB
-            Expand("💡 Deep Dive")
-            Map("🕸️ Tech Map")
-            Fun("🔮 Entertainment")
+            DeepDive("💡 Deep Dive<br>(Analysis)")
+            Map("🕸️ Tech Map<br>(Visualization)")
+            Fun("🔮 2035 Vision<br>(Card/Diary)")
         end
         
-        Output -.-> Expand
-        Output -.-> Map
-        Output -.-> Fun
+        %% AIから拡張機能への点線接続
+        AI -.->|"Analyze"| DeepDive
+        AI -.->|"Visualize"| Map
+        AI -.->|"Imagine"| Fun
 
+        %% スタイル定義
         style User fill:#e8f0fe,stroke:#333,stroke-width:2px
         style DB fill:#e6f3ff,stroke:#00f,stroke-width:2px
         style AI fill:#ffebee,stroke:#f00,stroke-width:2px
@@ -374,8 +346,7 @@ if app_mode == "💬 AIチャット (RAG)":
             st.session_state.career_card = None
             st.session_state.future_diary = None
             with st.spinner("Analyzing 700 Data Feeds... Standby for Analysis."):
-                result = run_rag_search(query, selected_categories)
-                st.session_state.rag_result = result
+                st.session_state.rag_result = run_rag_search(query, selected_categories)
                 st.session_state.last_query = query
         else:
             st.error("質問を入力してください。")
@@ -387,35 +358,33 @@ if app_mode == "💬 AIチャット (RAG)":
             st.markdown("---")
             sources_str = ', '.join(result['sources']) if result['sources'] else "なし"
             st.markdown(f"**📚 参照された資料:** {sources_str}") 
-            
-            # 原文だけでなく、抽出された「要約・分析」も確認できるようにする（デバッグ兼確認用）
             with st.expander("📄 参照データ（原文・抽出メタデータ）を確認する"):
                 st.caption("▼ RAGで使用された原文")
                 st.code(result['context'], language="markdown")
                 if result.get('meta_context'):
                     st.caption("▼ 思考エレベーター用抽出データ（要約・分析）")
                     st.code(result['meta_context'], language="markdown")
-
-            st.markdown("---")
-            st.subheader("💡 Deep Dive & Expansion (Knowledge Elevator)")
             
+            # === 思考の深掘り ===
+            st.markdown("---")
+            st.subheader("💡 Deep Dive & Expansion")
             c1, c2, c3 = st.columns(3)
             
-            # 🚨 修正: 関数呼び出し時に meta_context を渡すように変更
+            # メタデータの取得（エラー回避用）
             meta_context = result.get('meta_context', '')
             
             with c1: 
-                if st.button("⬆️ 抽象化 (上位概念)", key="btn_abs", use_container_width=True):
+                if st.button("⬆️ 抽象化", key="btn_abs", use_container_width=True):
                     with st.spinner("Thinking Macro..."):
                         st.session_state.thought_expansion = generate_thought_expansion(
                             st.session_state.last_query, "abstract", meta_context)
             with c2: 
-                if st.button("⬇️ 具体化 (応用例)", key="btn_con", use_container_width=True):
+                if st.button("⬇️ 具体化", key="btn_con", use_container_width=True):
                     with st.spinner("Thinking Micro..."):
                         st.session_state.thought_expansion = generate_thought_expansion(
                             st.session_state.last_query, "concrete", meta_context)
             with c3: 
-                if st.button("↔️ 横展開 (関連技術)", key="btn_ana", use_container_width=True):
+                if st.button("↔️ 横展開", key="btn_ana", use_container_width=True):
                     with st.spinner("Connecting Dots..."):
                         st.session_state.thought_expansion = generate_thought_expansion(
                             st.session_state.last_query, "analogous", meta_context)
@@ -426,6 +395,7 @@ if app_mode == "💬 AIチャット (RAG)":
                 st.caption("※ 検索された技術資料の「要約・分析」情報をベースに、AIが洞察を広げました。")
                 for item in d.get('items', []): st.write(f"• {item}")
 
+            # === 技術マップ ===
             st.markdown("")
             if st.button("🕸️ 技術体系マップを表示する", key="btn_map", use_container_width=True):
                 with st.spinner("Mapping..."):
@@ -437,6 +407,7 @@ if app_mode == "💬 AIチャット (RAG)":
                     else:
                         st.error("マップ生成に失敗しました")
 
+            # === エンタメ機能 ===
             st.markdown("---")
             st.subheader("🚀 2035 Vision Simulation")
             ec1, ec2 = st.columns(2)
@@ -458,7 +429,7 @@ if app_mode == "💬 AIチャット (RAG)":
                     col_img, col_txt = st.columns([1, 3])
                     with col_img: st.image("https://img.icons8.com/fluency/96/future.png", width=80)
                     with col_txt:
-                        st.markdown(f"### {c.get('job_title', 'Future Job')}")
+                        st.markdown(f"### {c.get('job_title', 'Unknown Job')}")
                         st.metric(label="想定年収 (2035)", value=c.get('estimated_salary', '---'))
                     st.write(f"**Mission:** {c.get('mission', '')}")
                     st.write(f"**Skills:** {', '.join(c.get('required_skills', []))}")
@@ -483,3 +454,5 @@ elif app_mode == "📚 データカタログ一覧":
         st.dataframe(df_filtered, use_container_width=True, hide_index=True)
     else:
         st.warning("データが見つかりません。")
+
+st.sidebar.markdown("---")
