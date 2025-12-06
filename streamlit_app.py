@@ -359,16 +359,19 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("#### 🔌 System Architecture")
     render_mermaid("""
     graph LR
+        %% ノード定義
         User(("👨‍💻 USER<br>(Query)"))
         DB[("📚 VECTOR DB<br>(700 Reports)")]
         AI[["🧠 GEN-AI<br>(Claude 3 Haiku)"]]
         Output> "🚀 OUTPUT<br>(RAG Result)"]
 
+        %% フロー定義
         User -->|"Semantic Search"| DB
         DB -->|"Retrieval"| AI
         User -->|"Context"| AI
         AI -->|"Generation"| Output
 
+        %% 拡張機能エリア（並列処理を表現）
         subgraph Ext [Expansion Features (Direct API Call)]
             direction TB
             DeepDive("💡 Deep Dive<br>(Analysis)")
@@ -376,16 +379,19 @@ if app_mode == "💬 AIチャット (RAG)":
             Fun("🔮 2035 Vision<br>(Card/Diary)")
         end
         
+        %% AIから拡張機能への点線接続
         AI -.->|"Analyze"| DeepDive
         AI -.->|"Visualize"| Map
         AI -.->|"Imagine"| Fun
 
+        %% スタイル定義
         style User fill:#e8f0fe,stroke:#333,stroke-width:2px
         style DB fill:#e6f3ff,stroke:#00f,stroke-width:2px
         style AI fill:#ffebee,stroke:#f00,stroke-width:2px
         style Output fill:#d4edda,stroke:#333,stroke-width:2px
         style Ext fill:#fff,stroke:#999,stroke-dasharray: 5 5
-    """)
+    """) 
+
     st.markdown("---")
 
     if "rag_result" not in st.session_state: st.session_state.rag_result = None
