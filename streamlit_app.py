@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 import base64 # 👈 画像表示用に必要
+from streamlit_agraph import agraph, Node, Edge, Config # 👈 追加
 
 # --- 1. Firestore接続 ---
 @st.cache_resource
@@ -218,6 +219,48 @@ def get_all_data_as_df():
         docs_list.append({"Title": d.get('title', ''), "Category": d.get('category', '')})
     return pd.DataFrame(docs_list)
 
+# --- ナレッジグラフ構築関数 ---
+@st.cache_data(ttl=3600) # データ量が多いので1時間キャッシュ
+def build_knowledge_graph():
+    db = setup_firestore()
+    if not db: return [], []
+    
+    nodes = []
+    edges = []
+    
+    # Firestoreから全データのタイトルとタグを取得
+    # 通信量削減のため、必要なフィールドだけ取得
+    docs = db.collection("tech_docs").select(['title', 'category', 'tags']).stream()
+    
+    # ノードとエッジの作成
+    # 構造: [記事ノード] --(has tag)--> [タグノード]
+    
+    existing_tags = set()
+    
+    for doc in docs:
+        d = doc.to_dict()
+        doc_id = d.get('title', 'No Title')
+        category = d.get('category', 'General')
+        tags = d.get('tags', [])
+        
+        # 1. 記事ノードの追加
+        # カテゴリごとに色分けなどの工夫も可能
+        nodes.append(Node(id=doc_id, label=doc_id, size=15, color="#4F8BF9", shape="dot"))
+        
+        # 2. タグノードとエッジの追加
+        for tag in tags:
+            tag_id = f"tag_{tag}"
+            
+            # タグノードは重複しないように管理
+            if tag_id not in existing_tags:
+                nodes.append(Node(id=tag_id, label=tag, size=10, color="#FF6B6B", shape="diamond"))
+                existing_tags.add(tag_id)
+            
+            # 記事とタグをつなぐエッジ
+            edges.append(Edge(source=doc_id, target=tag_id, color="#DDDDDD"))
+            
+    return nodes, edges
+
 # --- 4. 認証ロジック ---
 def check_password():
     input_pass = st.session_state.get("password_input")
@@ -263,7 +306,10 @@ if st.sidebar.button("ログアウト", key='logout_top'):
     st.session_state.rag_result = None
     st.rerun()
 
-app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧"])
+# 🚨 選択肢を追加
+app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧", "🕸️ ナレッジグラフ"])
+
+#app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧"])
 
 CATEGORY_MAPPING = {
     "Gartner Hype Cycle 2025": "gartner_2025",
@@ -454,5 +500,32 @@ elif app_mode == "📚 データカタログ一覧":
         st.dataframe(df_filtered, use_container_width=True, hide_index=True)
     else:
         st.warning("データが見つかりません。")
+# 🚨 新しいモードの処理を追加 (ファイルの末尾に追加)
+elif app_mode == "🕸️ ナレッジグラフ":
+    st.title("🕸️ Knowledge Graph Visualization")
+    st.markdown("データベース内の技術レポート（青）とタグ（赤）の関連性を可視化します。")
+    
+    with st.spinner("グラフを構築中... (データ量により時間がかかります)"):
+        nodes, edges = build_knowledge_graph()
+        
+        if not nodes:
+            st.warning("データが見つかりません。")
+        else:
+            st.info(f"ノード数: {len(nodes)} (記事+タグ) / エッジ数: {len(edges)}")
+            
+            # グラフの設定
+            config = Config(
+                width="100%",
+                height=600,
+                directed=False, 
+                physics=True, 
+                hierarchical=False,
+                nodeHighlightBehavior=True,
+                highlightColor="#F7A278",
+                collapsible=True
+            )
+            
+            # 描画
+            return_value = agraph(nodes=nodes, edges=edges, config=config)
 
 st.sidebar.markdown("---")

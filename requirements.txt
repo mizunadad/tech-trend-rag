@@ -5,3 +5,5 @@ firebase-admin
 sentence-transformers
 anthropic
 graphviz
+python-frontmatter
+streamlit-agraph  # 👈 新規追加 (インタラクティブなグラフ描画用)
