@@ -299,8 +299,11 @@ if st.sidebar.button("ログアウト", key='logout_top'):
     st.session_state.rag_result = None
     st.rerun()
 
-app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧", "🕸️ ナレッジグラフ"])
-
+#app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧", "🕸️ ナレッジグラフ"])
+app_mode = st.sidebar.radio(
+    "モード選択", 
+    ["💬 AIチャット (RAG)", "📚 データカタログ一覧", "🕸️ ナレッジグラフ", "📖 プロジェクト概要"]
+)
 CATEGORY_MAPPING = {
     "Gartner Hype Cycle 2025": "gartner_2025",
     "日経BP 技術トレンド": "nikkei_bp_2025_2035",
@@ -329,7 +332,17 @@ elif app_mode == "🕸️ ナレッジグラフ":
     for label, category_id in CATEGORY_MAPPING.items():
         if st.sidebar.checkbox(label, value=False, key=f"graph_check_{category_id}"):
             selected_categories.append(category_id)
-            
+elif app_mode == "📖 プロジェクト概要":
+    st.title("📖 About This Project")
+    
+    # README.md を読み込んで表示
+    try:
+        with open("README.md", "r", encoding="utf-8") as f:
+            readme_content = f.read()
+        st.markdown(readme_content)
+    except FileNotFoundError:
+        st.error("README.md ファイルが見つかりません。")
+
 elif app_mode == "📚 データカタログ一覧":
     st.sidebar.subheader("📚 カタログ表示フィルタ")
     for label, category_id in CATEGORY_MAPPING.items():
