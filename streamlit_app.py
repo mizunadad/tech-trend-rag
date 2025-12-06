@@ -219,44 +219,45 @@ def get_all_data_as_df():
         docs_list.append({"Title": d.get('title', ''), "Category": d.get('category', '')})
     return pd.DataFrame(docs_list)
 
-# --- ナレッジグラフ構築関数 ---
-@st.cache_data(ttl=3600) # データ量が多いので1時間キャッシュ
-def build_knowledge_graph():
+# --- ナレッジグラフ構築関数 (フィルタリング対応版) ---
+@st.cache_data(ttl=3600)
+def build_knowledge_graph(target_categories): # 👈 引数を追加
     db = setup_firestore()
     if not db: return [], []
     
     nodes = []
     edges = []
+    existing_nodes = set() # ノード重複防止用
     
-    # Firestoreから全データのタイトルとタグを取得
-    # 通信量削減のため、必要なフィールドだけ取得
+    # Firestoreから全データを取得 (フィルタリングはPython側で行う)
+    # ※Firestoreのクエリ制限回避のため全件取得し、Pythonで絞る
     docs = db.collection("tech_docs").select(['title', 'category', 'tags']).stream()
-    
-    # ノードとエッジの作成
-    # 構造: [記事ノード] --(has tag)--> [タグノード]
-    
-    existing_tags = set()
     
     for doc in docs:
         d = doc.to_dict()
-        doc_id = d.get('title', 'No Title')
         category = d.get('category', 'General')
+        
+        # 🚨 フィルタリング: 選択されたカテゴリ以外はスキップ
+        if category not in target_categories:
+            continue
+            
+        doc_id = d.get('title', 'No Title')
         tags = d.get('tags', [])
         
         # 1. 記事ノードの追加
-        # カテゴリごとに色分けなどの工夫も可能
-        nodes.append(Node(id=doc_id, label=doc_id, size=15, color="#4F8BF9", shape="dot"))
+        if doc_id not in existing_nodes:
+            nodes.append(Node(id=doc_id, label=doc_id, size=15, color="#4F8BF9", shape="dot"))
+            existing_nodes.add(doc_id)
         
         # 2. タグノードとエッジの追加
         for tag in tags:
             tag_id = f"tag_{tag}"
             
-            # タグノードは重複しないように管理
-            if tag_id not in existing_tags:
+            if tag_id not in existing_nodes:
                 nodes.append(Node(id=tag_id, label=tag, size=10, color="#FF6B6B", shape="diamond"))
-                existing_tags.add(tag_id)
+                existing_nodes.add(tag_id)
             
-            # 記事とタグをつなぐエッジ
+            # エッジの追加
             edges.append(Edge(source=doc_id, target=tag_id, color="#DDDDDD"))
             
     return nodes, edges
@@ -503,29 +504,25 @@ elif app_mode == "📚 データカタログ一覧":
 # 🚨 新しいモードの処理を追加 (ファイルの末尾に追加)
 elif app_mode == "🕸️ ナレッジグラフ":
     st.title("🕸️ Knowledge Graph Visualization")
-    st.markdown("データベース内の技術レポート（青）とタグ（赤）の関連性を可視化します。")
+    st.markdown("選択されたカテゴリの技術レポート（青）とタグ（赤）の関連性を可視化します。")
     
-    with st.spinner("グラフを構築中... (データ量により時間がかかります)"):
-        nodes, edges = build_knowledge_graph()
-        
-        if not nodes:
-            st.warning("データが見つかりません。")
-        else:
-            st.info(f"ノード数: {len(nodes)} (記事+タグ) / エッジ数: {len(edges)}")
+    # 🚨 修正: 選択されたカテゴリを引数に渡す
+    if not selected_categories:
+        st.warning("左側のサイドバーで、表示したいカテゴリを選択してください。")
+    else:
+        with st.spinner("グラフを構築中..."):
+            nodes, edges = build_knowledge_graph(selected_categories)
             
-            # グラフの設定
-            config = Config(
-                width="100%",
-                height=600,
-                directed=False, 
-                physics=True, 
-                hierarchical=False,
-                nodeHighlightBehavior=True,
-                highlightColor="#F7A278",
-                collapsible=True
-            )
-            
-            # 描画
-            return_value = agraph(nodes=nodes, edges=edges, config=config)
+            if not nodes:
+                st.warning("データが見つかりません。")
+            elif len(nodes) > 500:
+                st.warning(f"⚠️ ノード数が {len(nodes)} 件あります。描画に時間がかかるか、ブラウザが重くなる可能性があります。カテゴリを絞ることをお勧めします。")
+                # それでも描画する
+                config = Config(width="100%", height=600, directed=False, physics=True, hierarchical=False, collapsible=True)
+                return_value = agraph(nodes=nodes, edges=edges, config=config)
+            else:
+                st.info(f"ノード数: {len(nodes)} (記事+タグ) / エッジ数: {len(edges)}")
+                config = Config(width="100%", height=600, directed=False, physics=True, hierarchical=False, collapsible=True)
+                return_value = agraph(nodes=nodes, edges=edges, config=config)
 
 st.sidebar.markdown("---")
