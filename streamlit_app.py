@@ -8,8 +8,8 @@ import anthropic
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-import base64 # 👈 画像表示用に必要
-from streamlit_agraph import agraph, Node, Edge, Config # 👈 追加
+import base64
+from streamlit_agraph import agraph, Node, Edge, Config
 
 # --- 1. Firestore接続 ---
 @st.cache_resource
@@ -32,7 +32,7 @@ def load_embedding_model():
 
 def run_rag_search(query, selected_categories):
     db = setup_firestore()
-    if not db: return {"answer": "DB接続失敗", "sources": [], "context": "", "meta_context": ""}
+    if not db: return {"answer": "DB接続失敗", "sources": [], "context": ""}
     
     model = load_embedding_model()
     
@@ -40,6 +40,10 @@ def run_rag_search(query, selected_categories):
         query_embedding = model.encode(query)
         
         all_docs = []
+        # フィルタリング対象のカテゴリが空の場合は検索しない
+        if not selected_categories:
+            return {"answer": "検索対象が選択されていません。", "sources": [], "context": ""}
+
         docs_stream = db.collection("tech_docs").stream()
         
         for doc in docs_stream:
@@ -49,7 +53,7 @@ def run_rag_search(query, selected_categories):
                 all_docs.append(data)
 
         if not all_docs:
-            return {"answer": "データが見つかりません。", "sources": [], "context": "", "meta_context": ""}
+            return {"answer": "条件に一致するデータが見つかりません。サイドバーのフィルタ設定を確認してください。", "sources": [], "context": ""}
 
         doc_embeddings = np.array([doc['embedding'] for doc in all_docs])
         similarities = cosine_similarity(query_embedding.reshape(1, -1), doc_embeddings).flatten()
@@ -59,7 +63,7 @@ def run_rag_search(query, selected_categories):
 
         context_text = "\n\n---\n\n".join([doc.get('content', '') for doc in top_docs])
         
-        # 思考エレベーター用のメタデータ抽出
+        # メタデータ抽出
         meta_context_list = []
         for doc in top_docs:
             title = doc.get('title', 'No Title')
@@ -83,7 +87,7 @@ def run_rag_search(query, selected_categories):
         """
         
         response = client.messages.create(
-            model="claude-3-haiku-20240307", # 👈 Haikuに統一
+            model="claude-3-haiku-20240307",
             max_tokens=2000,
             messages=[{"role": "user", "content": prompt}]
         )
@@ -120,14 +124,6 @@ def call_claude_json(prompt):
     except Exception as e:
         st.error(f"AI生成エラー: {e}")
         return None
-
-# --- Mermaid図の描画関数 (画像変換版: 最も安定) ---
-def render_mermaid(graph_code):
-    graphbytes = graph_code.encode("utf8")
-    base64_bytes = base64.urlsafe_b64encode(graphbytes)
-    base64_string = base64_bytes.decode("ascii")
-    url = f"https://mermaid.ink/img/{base64_string}"
-    st.image(url, use_container_width=True)
 
 # --- 新機能群 ---
 def generate_future_career(topic):
@@ -209,6 +205,51 @@ def generate_tech_hierarchy(topic):
     except:
         return None
 
+# --- Mermaid図の描画関数 ---
+def render_mermaid(graph_code):
+    graphbytes = graph_code.encode("utf8")
+    base64_bytes = base64.urlsafe_b64encode(graphbytes)
+    base64_string = base64_bytes.decode("ascii")
+    url = f"https://mermaid.ink/img/{base64_string}"
+    st.image(url, use_container_width=True)
+
+# --- ナレッジグラフ構築関数 ---
+@st.cache_data(ttl=3600)
+def build_knowledge_graph(target_categories):
+    db = setup_firestore()
+    if not db: return [], []
+    
+    nodes = []
+    edges = []
+    existing_nodes = set()
+    
+    # コレクションから全件取得し、Python側でフィルタリング
+    docs = db.collection("tech_docs").select(['title', 'category', 'tags']).stream()
+    
+    for doc in docs:
+        d = doc.to_dict()
+        category = d.get('category', 'General')
+        
+        # フィルタリング
+        if category not in target_categories:
+            continue
+            
+        doc_id = d.get('title', 'No Title')
+        tags = d.get('tags', [])
+        
+        if doc_id not in existing_nodes:
+            nodes.append(Node(id=doc_id, label=doc_id, size=15, color="#4F8BF9", shape="dot"))
+            existing_nodes.add(doc_id)
+        
+        for tag in tags:
+            tag_id = f"tag_{tag}"
+            if tag_id not in existing_nodes:
+                nodes.append(Node(id=tag_id, label=tag, size=10, color="#FF6B6B", shape="diamond"))
+                existing_nodes.add(tag_id)
+            edges.append(Edge(source=doc_id, target=tag_id, color="#DDDDDD"))
+            
+    return nodes, edges
+
 @st.cache_data(ttl=600)
 def get_all_data_as_df():
     db = setup_firestore()
@@ -218,49 +259,6 @@ def get_all_data_as_df():
         d = doc.to_dict()
         docs_list.append({"Title": d.get('title', ''), "Category": d.get('category', '')})
     return pd.DataFrame(docs_list)
-
-# --- ナレッジグラフ構築関数 (フィルタリング対応版) ---
-@st.cache_data(ttl=3600)
-def build_knowledge_graph(target_categories): # 👈 引数を追加
-    db = setup_firestore()
-    if not db: return [], []
-    
-    nodes = []
-    edges = []
-    existing_nodes = set() # ノード重複防止用
-    
-    # Firestoreから全データを取得 (フィルタリングはPython側で行う)
-    # ※Firestoreのクエリ制限回避のため全件取得し、Pythonで絞る
-    docs = db.collection("tech_docs").select(['title', 'category', 'tags']).stream()
-    
-    for doc in docs:
-        d = doc.to_dict()
-        category = d.get('category', 'General')
-        
-        # 🚨 フィルタリング: 選択されたカテゴリ以外はスキップ
-        if category not in target_categories:
-            continue
-            
-        doc_id = d.get('title', 'No Title')
-        tags = d.get('tags', [])
-        
-        # 1. 記事ノードの追加
-        if doc_id not in existing_nodes:
-            nodes.append(Node(id=doc_id, label=doc_id, size=15, color="#4F8BF9", shape="dot"))
-            existing_nodes.add(doc_id)
-        
-        # 2. タグノードとエッジの追加
-        for tag in tags:
-            tag_id = f"tag_{tag}"
-            
-            if tag_id not in existing_nodes:
-                nodes.append(Node(id=tag_id, label=tag, size=10, color="#FF6B6B", shape="diamond"))
-                existing_nodes.add(tag_id)
-            
-            # エッジの追加
-            edges.append(Edge(source=doc_id, target=tag_id, color="#DDDDDD"))
-            
-    return nodes, edges
 
 # --- 4. 認証ロジック ---
 def check_password():
@@ -307,30 +305,50 @@ if st.sidebar.button("ログアウト", key='logout_top'):
     st.session_state.rag_result = None
     st.rerun()
 
-# 🚨 選択肢を追加
 app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧", "🕸️ ナレッジグラフ"])
-
-#app_mode = st.sidebar.radio("モード選択", ["💬 AIチャット (RAG)", "📚 データカタログ一覧"])
 
 CATEGORY_MAPPING = {
     "Gartner Hype Cycle 2025": "gartner_2025",
     "日経BP 技術トレンド": "nikkei_bp_2025_2035",
     "次世代発電技術": "次世代発電",
     "自動車産業予測 2045": "自動車産業2045",
-    "[記事] AI & Info": "AIinfo",
-    "[記事] Python & Web": "python_and_webtech",
-    "[記事] 品質・セキュリティ": "Quality_and_Sequrity",
-    "[記事] 半導体コラム": "Semiconductor",
-    "[記事] Tips": "Tips"
+    "Articles: AI Info": "AIinfo",
+    "Articles: Python & Web": "python_and_webtech",
+    "Articles: Quality & Security": "Quality_and_Sequrity",
+    "Articles: Semiconductor": "Semiconductor",
+    "Articles: Tips": "Tips"
 }
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🔍 検索対象ソース")
-st.sidebar.caption("検索したいデータソースにチェックを入れてください")
+
+# 🚨 修正: モードに応じてサイドバーの表示を切り替える
 selected_categories = []
-for label, category_id in CATEGORY_MAPPING.items():
-    if st.sidebar.checkbox(label, value=True, key=f"check_{category_id}"):
-        selected_categories.append(category_id)
+
+if app_mode == "💬 AIチャット (RAG)":
+    st.sidebar.subheader("🔍 RAG検索対象ソース")
+    st.sidebar.caption("検索範囲を選択してください")
+    # RAG用の選択状態を保持
+    for label, category_id in CATEGORY_MAPPING.items():
+        # デフォルトで全選択
+        if st.sidebar.checkbox(label, value=True, key=f"rag_check_{category_id}"):
+            selected_categories.append(category_id)
+
+elif app_mode == "🕸️ ナレッジグラフ":
+    st.sidebar.subheader("🕸️ グラフ表示対象ソース")
+    st.sidebar.caption("可視化したいカテゴリを選択してください")
+    # グラフ用の選択状態を保持（RAGとは別管理）
+    # デフォルトはオフ（重くなるのを防ぐため）、または少なめに
+    for label, category_id in CATEGORY_MAPPING.items():
+        if st.sidebar.checkbox(label, value=False, key=f"graph_check_{category_id}"):
+            selected_categories.append(category_id)
+            
+elif app_mode == "📚 データカタログ一覧":
+    st.sidebar.subheader("📚 カタログ表示フィルタ")
+    for label, category_id in CATEGORY_MAPPING.items():
+        if st.sidebar.checkbox(label, value=True, key=f"cat_check_{category_id}"):
+            selected_categories.append(category_id)
+
+# --- メインコンテンツ ---
 
 if app_mode == "💬 AIチャット (RAG)":
     st.title("🧬 NEXT-GEN CAREER BRAIN")
@@ -338,45 +356,38 @@ if app_mode == "💬 AIチャット (RAG)":
     st.markdown("---")
     st.markdown("##### **[ACCESS GRANTED]** KNOWLEDGE SYSTEM READY FOR QUERY.")
     
-    # 🔌 システムフロー図 (Mermaid画像版: 修正済み)
     st.markdown("#### 🔌 System Architecture")
     render_mermaid("""
     graph LR
-        %% ノード定義 (HTMLタグ除去)
-        User((User/Query))
-        DB[(Vector DB)]
-        AI[[Gen-AI Claude]]
-        Output>Output Result]
+        User(("👨‍💻 USER<br>(Query)"))
+        DB[("📚 VECTOR DB<br>(700 Reports)")]
+        AI[["🧠 GEN-AI<br>(Claude 3 Haiku)"]]
+        Output> "🚀 OUTPUT<br>(RAG Result)"]
 
-        %% フロー定義
-        User -->|Search| DB
-        DB -->|Retrieval| AI
-        User -->|Context| AI
-        AI -->|Generation| Output
+        User -->|"Semantic Search"| DB
+        DB -->|"Retrieval"| AI
+        User -->|"Context"| AI
+        AI -->|"Generation"| Output
 
-        %% 拡張機能エリア
-        subgraph Expansion [Expansion Features]
+        subgraph Ext [Expansion Features (Direct API Call)]
             direction TB
-            DeepDive(Deep Dive Analysis)
-            Map(Tech Map Visualization)
-            Fun(2035 Vision Card/Diary)
+            DeepDive("💡 Deep Dive<br>(Analysis)")
+            Map("🕸️ Tech Map<br>(Visualization)")
+            Fun("🔮 2035 Vision<br>(Card/Diary)")
         end
+        
+        AI -.->|"Analyze"| DeepDive
+        AI -.->|"Visualize"| Map
+        AI -.->|"Imagine"| Fun
 
-        %% 接続
-        Output -.->|Analyze| DeepDive
-        Output -.->|Visualize| Map
-        Output -.->|Imagine| Fun
-
-        %% スタイル定義
         style User fill:#e8f0fe,stroke:#333,stroke-width:2px
         style DB fill:#e6f3ff,stroke:#00f,stroke-width:2px
         style AI fill:#ffebee,stroke:#f00,stroke-width:2px
         style Output fill:#d4edda,stroke:#333,stroke-width:2px
-        style Expansion fill:#fff,stroke:#999,stroke-dasharray: 5 5
+        style Ext fill:#fff,stroke:#999,stroke-dasharray: 5 5
     """)
     st.markdown("---")
 
-    # ステート初期化
     if "rag_result" not in st.session_state: st.session_state.rag_result = None
     if "last_query" not in st.session_state: st.session_state.last_query = ""
     if "thought_expansion" not in st.session_state: st.session_state.thought_expansion = None
@@ -387,7 +398,7 @@ if app_mode == "💬 AIチャット (RAG)":
 
     if st.button("🔍 Research Techs ", type="primary", key='rag_search_button'):
         if not selected_categories:
-            st.error("⚠️ 検索対象ソースが選択されていません。")
+            st.error("⚠️ 検索対象ソースが選択されていません。サイドバーで選択してください。")
         elif query:
             st.session_state.thought_expansion = None
             st.session_state.career_card = None
@@ -412,12 +423,10 @@ if app_mode == "💬 AIチャット (RAG)":
                     st.caption("▼ 思考エレベーター用抽出データ（要約・分析）")
                     st.code(result['meta_context'], language="markdown")
             
-            # === 思考の深掘り ===
             st.markdown("---")
             st.subheader("💡 Deep Dive & Expansion")
             c1, c2, c3 = st.columns(3)
             
-            # メタデータの取得（エラー回避用）
             meta_context = result.get('meta_context', '')
             
             with c1: 
@@ -442,7 +451,6 @@ if app_mode == "💬 AIチャット (RAG)":
                 st.caption("※ 検索された技術資料の「要約・分析」情報をベースに、AIが洞察を広げました。")
                 for item in d.get('items', []): st.write(f"• {item}")
 
-            # === 技術マップ ===
             st.markdown("")
             if st.button("🕸️ 技術体系マップを表示する", key="btn_map", use_container_width=True):
                 with st.spinner("Mapping..."):
@@ -454,7 +462,6 @@ if app_mode == "💬 AIチャット (RAG)":
                     else:
                         st.error("マップ生成に失敗しました")
 
-            # === エンタメ機能 ===
             st.markdown("---")
             st.subheader("🚀 2035 Vision Simulation")
             ec1, ec2 = st.columns(2)
@@ -501,28 +508,25 @@ elif app_mode == "📚 データカタログ一覧":
         st.dataframe(df_filtered, use_container_width=True, hide_index=True)
     else:
         st.warning("データが見つかりません。")
-# 🚨 新しいモードの処理を追加 (ファイルの末尾に追加)
+
+# 🚨 修正: ナレッジグラフのモードロジック
 elif app_mode == "🕸️ ナレッジグラフ":
-    st.title("🕸️ Knowledge Graph Visualization")
+    st.title("🕸️ Knowledge Graph")
     st.markdown("選択されたカテゴリの技術レポート（青）とタグ（赤）の関連性を可視化します。")
     
-    # 🚨 修正: 選択されたカテゴリを引数に渡す
+    # カテゴリが未選択の場合の案内
     if not selected_categories:
-        st.warning("左側のサイドバーで、表示したいカテゴリを選択してください。")
+        st.warning("👈 左側のサイドバーで、可視化したいカテゴリにチェックを入れてください。")
     else:
         with st.spinner("グラフを構築中..."):
             nodes, edges = build_knowledge_graph(selected_categories)
             
-            if not nodes:
-                st.warning("データが見つかりません。")
-            elif len(nodes) > 500:
-                st.warning(f"⚠️ ノード数が {len(nodes)} 件あります。描画に時間がかかるか、ブラウザが重くなる可能性があります。カテゴリを絞ることをお勧めします。")
-                # それでも描画する
-                config = Config(width="100%", height=600, directed=False, physics=True, hierarchical=False, collapsible=True)
-                return_value = agraph(nodes=nodes, edges=edges, config=config)
+            # 🚨 修正: 安全装置 (400ノード制限)
+            if len(nodes) > 400:
+                st.error(f"⚠️ ノード数が多すぎます ({len(nodes)}件)。ブラウザのフリーズを防ぐため、カテゴリを絞ってください。（推奨: 400件以下）")
+            elif not nodes:
+                st.warning("選択されたカテゴリにデータ（またはタグ）が見つかりません。")
             else:
-                st.info(f"ノード数: {len(nodes)} (記事+タグ) / エッジ数: {len(edges)}")
+                st.info(f"Nodes: {len(nodes)} | Edges: {len(edges)}")
                 config = Config(width="100%", height=600, directed=False, physics=True, hierarchical=False, collapsible=True)
                 return_value = agraph(nodes=nodes, edges=edges, config=config)
-
-st.sidebar.markdown("---")
